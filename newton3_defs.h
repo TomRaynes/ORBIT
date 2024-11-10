@@ -22,15 +22,15 @@
 #define SF 598400000
 #define G 6.6743*pow(10, -11)
 #define S_MASS 1.989*pow(10, 30)
-#define E_MASS 5.972*pow(10, 24)
+#define E_MASS 5.972*pow(10, 29) // 5.972*pow(10, 24)
 #define EARTH_POS_X 1.496*pow(10, 11)
 #define EARTH_POS_Y 0
 #define EARTH_VEL_X 0
 #define EARTH_VEL_Y 29780
-#define MOON_POS_X 3.833*pow(10, 8)
+#define MOON_POS_X 3.833*pow(10, 10) // 3.833*pow(10, 8)
 #define MOON_POS_Y 0
 #define MOON_VEL_X 0
-#define MOON_VEL_Y 1022
+#define MOON_VEL_Y 30220 // 1022
 
 typedef struct velocity {
     double x, y;
@@ -39,12 +39,14 @@ typedef struct velocity {
 typedef struct position {
     double x, y;
     int screen_x, screen_y;
+    int Gx, Gy;
 } position;
 
 typedef struct body {
     velocity vel;
     position pos;
     bool destroyed;
+    double Gmass;
     int radius;
 } body;
 
@@ -59,7 +61,10 @@ typedef struct motion {
 typedef enum speed {slow = -10, min_speed = -6, medium = 0, vel = 1, fast = 10} speed;
 typedef enum direction {forwards = 1, backwards = -1} direction;
 
-void update_orbit(body* b, double rt, double g, double Gmass);
+void update_orbit(body* b, double rt, double g);
 void init_solar_system(solar_system* sol);
 void draw_body(SDL_Renderer* ren, body* b);
 void check_body_position(body* b);
+void update_moon_gravitational_centre(solar_system* sol);
+void moon(body* b);
+void update_moon_orbit(body* earth, body* b, double rt, double g);
