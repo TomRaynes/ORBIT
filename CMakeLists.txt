@@ -4,4 +4,10 @@ project(Orbit C)
 set(CMAKE_C_STANDARD 99)
 
 add_executable(Orbit main.c
-        defs.h)
+        defs.h
+        newton.c
+        newton_defs.h
+        2_newton.c
+        newton2_defs.h
+        3_newton.c
+        newton3_defs.h)

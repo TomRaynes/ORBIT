@@ -27,7 +27,6 @@ int main(void) {
 
     SDL_Event e;
 
-    //body sun, earth, moon;
     solar_system sol;
     motion m;
     init_solar_system(&sol, &m);
@@ -99,7 +98,7 @@ void init_solar_system(solar_system* sol, motion* m) {
     sol->earth.orb_rad = EARTH_ORBITAL_RADIUS;
     sol->moon.radius = MOON_RADIUS;
     sol->moon.orb_rad = MOON_ORBITAL_RADIUS;
-    sol->earth.angle = sol->earth.angle = 0;
+    sol->earth.angle = sol->moon.angle = 0;
 
     m->rate = medium;
     m->scale = pow(1.5, m->rate);
