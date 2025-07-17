@@ -31,6 +31,12 @@
 #define MOON_POS_Y 0
 #define MOON_VEL_X 0
 #define MOON_VEL_Y 30220 // 1022
+// #define MARS_POS_X 1.496*pow(10, 11)
+// #define MARS_POS_Y 0
+// #define MARS_VEL_X 0
+// #define MARS_VEL_Y 29780
+
+#define BODY_COUNT 8
 
 typedef struct velocity {
     double x, y;
@@ -51,7 +57,9 @@ typedef struct body {
 } body;
 
 typedef struct solar_system {
-    body sun, earth, moon;
+    body sun, earth, moon, mars, jupiter, saturn;
+    body* bodies[BODY_COUNT];
+    bool zoom;
 } solar_system;
 
 typedef struct motion {
@@ -61,10 +69,13 @@ typedef struct motion {
 typedef enum speed {slow = -10, min_speed = -6, medium = 0, vel = 1, fast = 10} speed;
 typedef enum direction {forwards = 1, backwards = -1} direction;
 
-void update_orbit(body* b, double rt, double g);
+void update_orbit(body* b, solar_system* sol, double rt, double g);
 void init_solar_system(solar_system* sol);
 void draw_body(SDL_Renderer* ren, body* b);
-void check_body_position(body* b);
+void check_earth_position(solar_system* sol, body* b);
 void update_moon_gravitational_centre(solar_system* sol);
 void moon(body* b);
 void update_moon_orbit(body* earth, body* b, double rt, double g);
+void check_body_position(body* b, body* sun);
+void draw_saturn(SDL_Renderer* ren, body* b);
+void draw_jupiter(SDL_Renderer* ren, body* b);

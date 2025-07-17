@@ -10,4 +10,8 @@ add_executable(Orbit main.c
         2_newton.c
         newton2_defs.h
         3_newton.c
-        newton3_defs.h)
+        newton3_defs.h
+        solar_system.c
+        solar_system.c
+        sol.h
+        constants.h)
