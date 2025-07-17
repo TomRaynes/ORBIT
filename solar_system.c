@@ -1,4 +1,5 @@
 #include "sol.h"
+#include "constants.h"
 
 int main(void) {
 
@@ -26,7 +27,6 @@ int main(void) {
     }
 
     SDL_Event e;
-    //bool isFullscreen = false;
     bool quit = false;
 
     SolarSystem* sol = init_solar_system();
@@ -38,16 +38,17 @@ int main(void) {
                 quit = true;
             }
             if (e.type == SDL_KEYDOWN) {
-                get_control_input(panel, e);
+                get_control_input(panel, sol, e);
             }
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        update_orbits(sol, panel);
-        draw_solar_system(renderer, sol);
-
+        if (!panel->pause) {
+            update_orbits(sol, panel);
+        }
+        draw_solar_system(renderer, sol, panel);
         SDL_RenderPresent(renderer);
     }
 
@@ -59,10 +60,9 @@ int main(void) {
     SDL_Quit();
 
     return 0;
-
 }
 
-void get_control_input(ControlPanel* cp, SDL_Event e) {
+void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
     switch (e.key.keysym.sym) {
         case SDLK_ESCAPE:
             // quit
@@ -90,9 +90,28 @@ void get_control_input(ControlPanel* cp, SDL_Event e) {
                 cp->gravity -= GRAVITY_INCREMENT;
             }
             break;
-        case SDLK_SPACE:
-            // reset
+        case SDLK_RIGHTBRACKET:
+            if (cp->zoom_level < zoomedIn) {
+                adjust_zoom(cp, "increment");
+            }
             break;
+        case SDLK_LEFTBRACKET:
+            if (cp->zoom_level > zoomedOut) {
+                adjust_zoom(cp, "decrement");
+            }
+            break;
+        case SDLK_SPACE:
+            reset_solar_system(sol);
+            reset_control_panel(cp);
+            break;
+        case SDLK_t:
+            rotate_view_mode(cp);
+            reset_control_panel(cp);
+            reset_solar_system(sol);
+            //adjust_zoom(cp, "reset");
+            break;
+        case SDLK_p:
+            cp->pause = !cp->pause;
         default:
             break;
     }
@@ -105,9 +124,25 @@ ControlPanel* init_control_panel(void) {
         fprintf(stderr, "Error initialising control panel\n");
         exit(EXIT_FAILURE);
     }
+    reset_control_panel(panel);
+    panel->pause = true;
+    panel->view_mode = true_distance;
+    return panel;
+}
+
+void reset_control_panel(ControlPanel* panel) {
     panel->speed = slow;
     panel->gravity = normal;
-    return panel;
+    panel->zoom = 1;
+    panel->zoom_level = zoomDefault;
+}
+
+void rotate_view_mode(ControlPanel* cp) {
+    cp->view_mode++;
+
+    if (cp->view_mode == RESET_VIEW) {
+        cp->view_mode = true_distance;
+    }
 }
 
 SolarSystem* init_solar_system(void) {
@@ -117,49 +152,125 @@ SolarSystem* init_solar_system(void) {
         fprintf(stderr, "Error initialising solar system\n");
         exit(EXIT_FAILURE);
     }
+    reset_solar_system(sol);
+    return sol;
+}
 
+void reset_solar_system(SolarSystem* sol) {
     sol->sun.mass = SUN_MASS;
     sol->sun.radius = SUN_RADIUS;
+    sol->sun.true_radius = SUN_TRUE_RADIUS;
+    sol->sun.pv_radius = SUN_PV_RADIUS;
+    sol->sun.dist_scale = sol->sun.planet_view_scale = SUN_DIST_SF;
 
     sol->mercury.mass = MERCURY_MASS;
     sol->mercury.radius = MERCURY_RADIUS;
+    sol->mercury.true_radius = MERCURY_TRUE_RADIUS;
+    sol->mercury.pv_radius = MERCURY_PV_RADIUS;
+    sol->mercury.dist_scale = MERCURY_DIST_SF;
+    sol->mercury.planet_view_scale = MERCURY_PVD_SF;
     sol->mercury.pos.x = MERCURY_POSITION;
     sol->mercury.vel.y = MERCURY_VELOCITY;
+    sol->mercury.pos.y = sol->mercury.vel.x = 0;
 
     sol->venus.mass = VENUS_MASS;
     sol->venus.radius = VENUS_RADIUS;
+    sol->venus.true_radius = VENUS_TRUE_RADIUS;
+    sol->venus.pv_radius = VENUS_PV_RADIUS;
+    sol->venus.dist_scale = VENUS_DIST_SF;
+    sol->venus.planet_view_scale = VENUS_PVD_SF;
     sol->venus.pos.x = VENUS_POSITION;
     sol->venus.vel.y = VENUS_VELOCITY;
+    sol->venus.pos.y = sol->venus.vel.x = 0;
 
     sol->earth.mass = EARTH_MASS;
     sol->earth.radius = EARTH_RADIUS;
+    sol->earth.true_radius = EARTH_TRUE_RADIUS;
+    sol->earth.pv_radius = EARTH_PV_RADIUS;
+    sol->earth.dist_scale = EARTH_DIST_SF;
+    sol->earth.planet_view_scale = EARTH_PVD_SF;
     sol->earth.pos.x = EARTH_POSITION;
     sol->earth.vel.y = EARTH_VELOCITY;
+    sol->earth.pos.y = sol->earth.vel.x = 0;
 
     sol->mars.mass = MARS_MASS;
     sol->mars.radius = MARS_RADIUS;
+    sol->mars.true_radius = MARS_TRUE_RADIUS;
+    sol->mars.pv_radius = MARS_PV_RADIUS;
+    sol->mars.dist_scale = MARS_DIST_SF;
+    sol->mars.planet_view_scale = MARS_PVD_SF;
     sol->mars.pos.x = MARS_POSITION;
     sol->mars.vel.y = MARS_VELOCITY;
+    sol->mars.pos.y = sol->mars.vel.x = 0;
 
     sol->jupiter.mass = JUPITER_MASS;
     sol->jupiter.radius = JUPITER_RADIUS;
+    sol->jupiter.true_radius = JUPITER_TRUE_RADIUS;
+    sol->jupiter.pv_radius = JUPITER_PV_RADIUS;
+    sol->jupiter.dist_scale = JUPITER_DIST_SF;
+    sol->jupiter.planet_view_scale = JUPITER_PVD_SF;
     sol->jupiter.pos.x = JUPITER_POSITION;
     sol->jupiter.vel.y = JUPITER_VELOCITY;
+    sol->jupiter.pos.y = sol->jupiter.vel.x = 0;
 
     sol->saturn.mass = SATURN_MASS;
     sol->saturn.radius = SATURN_RADIUS;
+    sol->saturn.true_radius = SATURN_TRUE_RADIUS;
+    sol->saturn.pv_radius = SATURN_PV_RADIUS;
+    sol->saturn.dist_scale = SATURN_DIST_SF;
+    sol->saturn.planet_view_scale = SATURN_PVD_SF;
     sol->saturn.pos.x = SATURN_POSITION;
     sol->saturn.vel.y = SATURN_VELOCITY;
+    sol->saturn.pos.y = sol->saturn.vel.x = 0;
 
     sol->uranus.mass = URANUS_MASS;
     sol->uranus.radius = URANUS_RADIUS;
+    sol->uranus.true_radius = URANUS_TRUE_RADIUS;
+    sol->uranus.pv_radius = URANUS_PV_RADIUS;
+    sol->uranus.dist_scale = URANUS_DIST_SF;
+    sol->uranus.planet_view_scale = URANUS_PVD_SF;
     sol->uranus.pos.x = URANUS_POSITION;
     sol->uranus.vel.y = URANUS_VELOCITY;
+    sol->uranus.pos.y = sol->uranus.vel.x = 0;
 
     sol->neptune.mass = NEPTUNE_MASS;
     sol->neptune.radius = NEPTUNE_RADIUS;
+    sol->neptune.true_radius = NEPTUNE_TRUE_RADIUS;
+    sol->neptune.pv_radius = NEPTUNE_PV_RADIUS;
+    sol->neptune.dist_scale = NEPTUNE_DIST_SF;
+    sol->neptune.planet_view_scale = NEPTUNE_PVD_SF;
     sol->neptune.pos.x = NEPTUNE_POSITION;
     sol->neptune.vel.y = NEPTUNE_VELOCITY;
+    sol->neptune.pos.y = sol->neptune.vel.x = 0;
+
+    // set colours
+    sol->sun.col.r = SUN_COLOUR_R;
+    sol->sun.col.g = SUN_COLOUR_G;
+    sol->sun.col.b = SUN_COLOUR_B;
+    sol->mercury.col.r = MERCURY_COLOUR_R;
+    sol->mercury.col.g = MERCURY_COLOUR_G;
+    sol->mercury.col.b = MERCURY_COLOUR_B;
+    sol->venus.col.r = VENUS_COLOUR_R;
+    sol->venus.col.g = VENUS_COLOUR_G;
+    sol->venus.col.b = VENUS_COLOUR_B;
+    sol->earth.col.r = EARTH_COLOUR_R;
+    sol->earth.col.g = EARTH_COLOUR_G;
+    sol->earth.col.b = EARTH_COLOUR_B;
+    sol->mars.col.r = MARS_COLOUR_R;
+    sol->mars.col.g = MARS_COLOUR_G;
+    sol->mars.col.b = MARS_COLOUR_B;
+    sol->jupiter.col.r = JUPITER_COLOUR_R;
+    sol->jupiter.col.g = JUPITER_COLOUR_G;
+    sol->jupiter.col.b = JUPITER_COLOUR_B;
+    sol->saturn.col.r = SATURN_COLOUR_R;
+    sol->saturn.col.g = SATURN_COLOUR_G;
+    sol->saturn.col.b = SATURN_COLOUR_B;
+    sol->uranus.col.r = URANUS_COLOUR_R;
+    sol->uranus.col.g = URANUS_COLOUR_G;
+    sol->uranus.col.b = URANUS_COLOUR_B;
+    sol->neptune.col.r = NEPTUNE_COLOUR_R;
+    sol->neptune.col.g = NEPTUNE_COLOUR_G;
+    sol->neptune.col.b = NEPTUNE_COLOUR_B;
 
     sol->bodies[0] = &sol->sun;
     sol->bodies[1] = &sol->mercury;
@@ -170,43 +281,81 @@ SolarSystem* init_solar_system(void) {
     sol->bodies[6] = &sol->saturn;
     sol->bodies[7] = &sol->uranus;
     sol->bodies[8] = &sol->neptune;
-
-    return sol;
 }
 
-void draw_solar_system(SDL_Renderer* r, SolarSystem* sol) {
-    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
-
-    for (int i=0; i<BODY_COUNT; i++) {
-        //printf("Body = %d\n", i);
-        draw_body(r, sol->bodies[i]);
+void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
+    for (int body=sun; body<BODY_COUNT; body++) {
+        draw_body(r, sol->bodies[body], cp);
     }
 }
 
-void draw_body(SDL_Renderer* r, Body* b) {
-    PixelCoordinate screen_pos = get_screen_pos(b->pos);
+void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
+    PixelCoordinate screen_pos = get_screen_pos(b, cp);
     int screen_y = (int) screen_pos.y;
+    int radius = get_render_size(b, cp);
 
-    for (int y = -b->radius; y <= b->radius; y++) {
-        long double dx = sqrt(b->radius * b->radius - y * y);
+    for (int y=-radius; y<=radius; y++) {
+        long double dx = sqrt(radius*radius - y * y);
         int startX = (int)(screen_pos.x - dx);
         int endX = (int)(screen_pos.x + dx);
-        //int screen_y = get_screen_pos(b->pos).y;
+        set_colour(r, b);
         SDL_RenderDrawLine(r, startX, screen_y + y, endX, screen_y + y);
     }
 }
 
-PixelCoordinate get_screen_pos(Vector position) {
+void adjust_zoom(ControlPanel* cp, const char* operation) {
+    if (strcmp(operation, "increment") == 0) {
+        cp->zoom_level += ZOOM_INCREMENT;
+    }
+    else if (strcmp(operation, "decrement") == 0) {
+        cp->zoom_level -= ZOOM_INCREMENT;
+    }
+    else if (strcmp(operation, "reset") == 0) {
+        cp->zoom_level = 0;
+    }
+    cp->zoom = pow(1.32, cp->zoom_level);
+}
+
+int get_render_size(Body* b, ControlPanel* cp) {
+    // if (cp->view_mode == true_size) {
+    //     return b->true_radius * cp->zoom / RADIUS_SF;
+    // }
+    // return b->radius * cp->zoom;
+
+    switch (cp->view_mode) {
+        case true_size: return b->true_radius * cp->zoom / RADIUS_SF;
+        case true_distance: return b->radius * cp->zoom;
+        case planet_view: return b->pv_radius * cp->zoom;
+        default: return -1;
+    }
+}
+
+PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     PixelCoordinate pixel;
-    pixel.x = position.x/SF + SCREEN_WIDTH/2;
-    pixel.y = position.y/SF + SCREEN_HEIGHT/2;
+    pixel.x = b->pos.x * cp->zoom;
+    pixel.y = b->pos.y * cp->zoom;
+
+    if (cp->view_mode == true_size) {
+        pixel.x /= b->dist_scale;
+        pixel.y /= b->dist_scale;
+    }
+    else if (cp->view_mode == true_distance) {
+        pixel.x /= DISTANCE_SF;
+        pixel.y /= DISTANCE_SF;
+    }
+    else {
+        pixel.x /= b->planet_view_scale;
+        pixel.y /= b->planet_view_scale;
+    }
+    pixel.x += SCREEN_WIDTH/2;
+    pixel.y += SCREEN_HEIGHT/2;
     return pixel;
 }
 
 void update_orbits(SolarSystem* sol, ControlPanel* cp) {
     // skip the sun
-    for (int i=1; i<BODY_COUNT; i++) {
-        update_orbit(sol->bodies[i], sol, cp->speed, pow(10, cp->gravity));
+    for (int body=mercury; body<BODY_COUNT; body++) {
+        update_orbit(sol->bodies[body], sol, cp->speed, pow(10, cp->gravity));
     }
 }
 
@@ -239,3 +388,8 @@ void update_orbit(Body* b, SolarSystem* sol, double rt, double g) {
     b->pos.x += b->vel.x * DT * rt;
     b->pos.y += b->vel.y * DT * rt;
 }
+
+void set_colour(SDL_Renderer* r, Body* b) {
+    SDL_SetRenderDrawColor(r, b->col.r, b->col.g, b->col.b, PLANET_COLOUR_OPACITY);
+}
+

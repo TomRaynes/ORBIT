@@ -14,4 +14,6 @@ add_executable(Orbit main.c
         solar_system.c
         solar_system.c
         sol.h
-        constants.h)
+        constants.h
+        gravity_box.c
+        gravity_box.h)
