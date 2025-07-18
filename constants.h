@@ -33,10 +33,10 @@
 
 // radius
 #define SUN_RADIUS 3
-#define MERCURY_RADIUS 1
-#define VENUS_RADIUS 1
-#define EARTH_RADIUS 1
-#define MARS_RADIUS 1
+#define MERCURY_RADIUS 2
+#define VENUS_RADIUS 2
+#define EARTH_RADIUS 2
+#define MARS_RADIUS 2
 #define JUPITER_RADIUS 2
 #define SATURN_RADIUS 2
 #define URANUS_RADIUS 2

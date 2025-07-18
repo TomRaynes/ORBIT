@@ -112,6 +112,17 @@ void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
             break;
         case SDLK_p:
             cp->pause = !cp->pause;
+            break;
+        case SDLK_EQUALS:
+            if (cp->angle > 0) {
+                cp->angle--;
+            }
+            break;
+        case SDLK_MINUS:
+            if (cp->angle < 45) {
+                cp->angle++;
+            }
+        break;
         default:
             break;
     }
@@ -126,7 +137,7 @@ ControlPanel* init_control_panel(void) {
     }
     reset_control_panel(panel);
     panel->pause = true;
-    panel->view_mode = true_distance;
+    panel->view_mode = planet_view;
     return panel;
 }
 
@@ -135,6 +146,7 @@ void reset_control_panel(ControlPanel* panel) {
     panel->gravity = normal;
     panel->zoom = 1;
     panel->zoom_level = zoomDefault;
+    panel->angle = 25;
 }
 
 void rotate_view_mode(ControlPanel* cp) {
@@ -172,6 +184,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->mercury.pos.x = MERCURY_POSITION;
     sol->mercury.vel.y = MERCURY_VELOCITY;
     sol->mercury.pos.y = sol->mercury.vel.x = 0;
+    sol->mercury.in_front = true;
 
     sol->venus.mass = VENUS_MASS;
     sol->venus.radius = VENUS_RADIUS;
@@ -182,6 +195,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->venus.pos.x = VENUS_POSITION;
     sol->venus.vel.y = VENUS_VELOCITY;
     sol->venus.pos.y = sol->venus.vel.x = 0;
+    sol->venus.in_front = true;
 
     sol->earth.mass = EARTH_MASS;
     sol->earth.radius = EARTH_RADIUS;
@@ -192,6 +206,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->earth.pos.x = EARTH_POSITION;
     sol->earth.vel.y = EARTH_VELOCITY;
     sol->earth.pos.y = sol->earth.vel.x = 0;
+    sol->earth.in_front = true;
 
     sol->mars.mass = MARS_MASS;
     sol->mars.radius = MARS_RADIUS;
@@ -202,6 +217,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->mars.pos.x = MARS_POSITION;
     sol->mars.vel.y = MARS_VELOCITY;
     sol->mars.pos.y = sol->mars.vel.x = 0;
+    sol->mars.in_front = true;
 
     sol->jupiter.mass = JUPITER_MASS;
     sol->jupiter.radius = JUPITER_RADIUS;
@@ -212,6 +228,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->jupiter.pos.x = JUPITER_POSITION;
     sol->jupiter.vel.y = JUPITER_VELOCITY;
     sol->jupiter.pos.y = sol->jupiter.vel.x = 0;
+    sol->jupiter.in_front = true;
 
     sol->saturn.mass = SATURN_MASS;
     sol->saturn.radius = SATURN_RADIUS;
@@ -222,6 +239,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->saturn.pos.x = SATURN_POSITION;
     sol->saturn.vel.y = SATURN_VELOCITY;
     sol->saturn.pos.y = sol->saturn.vel.x = 0;
+    sol->saturn.in_front = true;
 
     sol->uranus.mass = URANUS_MASS;
     sol->uranus.radius = URANUS_RADIUS;
@@ -232,6 +250,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->uranus.pos.x = URANUS_POSITION;
     sol->uranus.vel.y = URANUS_VELOCITY;
     sol->uranus.pos.y = sol->uranus.vel.x = 0;
+    sol->uranus.in_front = true;
 
     sol->neptune.mass = NEPTUNE_MASS;
     sol->neptune.radius = NEPTUNE_RADIUS;
@@ -242,6 +261,7 @@ void reset_solar_system(SolarSystem* sol) {
     sol->neptune.pos.x = NEPTUNE_POSITION;
     sol->neptune.vel.y = NEPTUNE_VELOCITY;
     sol->neptune.pos.y = sol->neptune.vel.x = 0;
+    sol->neptune.in_front = true;
 
     // set colours
     sol->sun.col.r = SUN_COLOUR_R;
@@ -284,8 +304,25 @@ void reset_solar_system(SolarSystem* sol) {
 }
 
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
-    for (int body=sun; body<BODY_COUNT; body++) {
-        draw_body(r, sol->bodies[body], cp);
+    // draw planets behind sun
+    for (int body=neptune; body>sun; body--) {
+        draw_orbit(r, sol->bodies[body], cp, false);
+
+        if (!sol->bodies[body]->in_front) {
+            draw_body(r, sol->bodies[body], cp);
+            //draw_orbit_overlay(r, sol->bodies[body], cp);
+        }
+    }
+    draw_body(r, sol->bodies[sun], cp);
+
+    //draw planets in front of sun
+    for (int body=mercury; body<BODY_COUNT; body++) {
+        draw_orbit(r, sol->bodies[body], cp, true);
+
+        if (sol->bodies[body]->in_front) {
+            draw_body(r, sol->bodies[body], cp);
+            //draw_orbit_overlay(r, sol->bodies[body], cp);
+        }
     }
 }
 
@@ -303,6 +340,51 @@ void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
     }
 }
 
+void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
+    int segments = 180;
+    double sunX = SCREEN_WIDTH/2;
+    double sunY = SCREEN_HEIGHT/2;
+    double dx = b->pos.x - sunX;
+    double dy = b->pos.y - sunY;
+    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom;
+
+    switch (cp->view_mode) {
+        case true_distance: orbit_radius /= DISTANCE_SF; break;
+        case true_size: orbit_radius /= b->dist_scale; break;
+        case planet_view: orbit_radius /= b->planet_view_scale; break;
+        default: break;
+    }
+    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
+
+    for (int i=0; i<segments; i++) {
+        double startAngle = front ?  2*M_PI * i / (2*segments) : -2*M_PI * i / (2*segments);
+        double endAngle = front ? 2*M_PI * (i + 1) / (2*segments) : -2*M_PI * (i + 1) / (2*segments);
+
+        int startX = sunX + (int) (orbit_radius * cos(startAngle));
+        int startY = sunY + (int) (orbit_radius * sin(startAngle) * get_squash_factor(cp->angle));
+        int endX = sunX + (int) (orbit_radius * cos(endAngle));
+        int endY = sunY + (int) (orbit_radius * sin(endAngle) * get_squash_factor(cp->angle));
+
+        SDL_RenderDrawLine(r, startX, startY, endX, endY);
+    }
+}
+
+double get_orbit_radius(Body* b, ControlPanel* cp) {
+    double sunX = SCREEN_WIDTH/2; //TODO: sunX, sunY should be just 0?
+    double sunY = SCREEN_HEIGHT/2;
+    double dx = b->pos.x - sunX;
+    double dy = b->pos.y - sunY;
+    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom;
+
+    switch (cp->view_mode) {
+        case true_distance: orbit_radius /= DISTANCE_SF; break;
+        case true_size: orbit_radius /= b->dist_scale; break;
+        case planet_view: orbit_radius /= b->planet_view_scale; break;
+        default: break;
+    }
+    return orbit_radius;
+}
+
 void adjust_zoom(ControlPanel* cp, const char* operation) {
     if (strcmp(operation, "increment") == 0) {
         cp->zoom_level += ZOOM_INCREMENT;
@@ -317,11 +399,6 @@ void adjust_zoom(ControlPanel* cp, const char* operation) {
 }
 
 int get_render_size(Body* b, ControlPanel* cp) {
-    // if (cp->view_mode == true_size) {
-    //     return b->true_radius * cp->zoom / RADIUS_SF;
-    // }
-    // return b->radius * cp->zoom;
-
     switch (cp->view_mode) {
         case true_size: return b->true_radius * cp->zoom / RADIUS_SF;
         case true_distance: return b->radius * cp->zoom;
@@ -348,8 +425,16 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
         pixel.y /= b->planet_view_scale;
     }
     pixel.x += SCREEN_WIDTH/2;
+    pixel.y *= get_squash_factor(cp->angle);
     pixel.y += SCREEN_HEIGHT/2;
     return pixel;
+}
+
+
+
+
+double get_squash_factor(double angle) {
+    return 1 - fabs(angle)/45;
 }
 
 void update_orbits(SolarSystem* sol, ControlPanel* cp) {
@@ -387,9 +472,19 @@ void update_orbit(Body* b, SolarSystem* sol, double rt, double g) {
 
     b->pos.x += b->vel.x * DT * rt;
     b->pos.y += b->vel.y * DT * rt;
+
+    //b->in_front = b->pos.y > 0 ? true : false;
+    b->in_front = is_in_front(b);
+}
+
+bool is_in_front(Body* b) {
+    double current_radius = sqrt(b->pos.x*b->pos.x + b->pos.y*b->pos.y);
+    return -b->pos.y/current_radius < 0.6 || b->pos.y > 0;
 }
 
 void set_colour(SDL_Renderer* r, Body* b) {
     SDL_SetRenderDrawColor(r, b->col.r, b->col.g, b->col.b, PLANET_COLOUR_OPACITY);
 }
+
+
 

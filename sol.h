@@ -27,6 +27,7 @@ typedef struct body {
     double pv_radius; // for planet view
     double dist_scale; // specific scale for true size view mode
     double planet_view_scale; // specific scale for planet view mode
+    bool in_front;
 } Body;
 
 typedef struct solar_system {
@@ -40,9 +41,9 @@ typedef struct control_panel {
     double gravity;
     double zoom_level;
     double zoom;
-    //bool show_true_size;
     bool pause;
     int view_mode;
+    double angle;
 } ControlPanel;
 
 typedef enum speed {slow = 1, fast = 1000} speed;
@@ -65,6 +66,14 @@ void set_colour(SDL_Renderer* r, Body* b);
 int get_render_size(Body* b, ControlPanel* cp);
 void adjust_zoom(ControlPanel* cp, const char* operation);
 void rotate_view_mode(ControlPanel* cp);
+double get_squash_factor(double angle);
+void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front);
+bool is_in_front(Body* b);
+double get_orbit_radius(Body* b, ControlPanel* cp);
 
 void check_for_bounce(Body* b, ControlPanel* cp);
 void check_for_bounces(SolarSystem* sol, ControlPanel* cp);
+
+
+
+
