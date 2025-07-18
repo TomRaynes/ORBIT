@@ -354,7 +354,7 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
         case planet_view: orbit_radius /= b->planet_view_scale; break;
         default: break;
     }
-    SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
     for (int i=0; i<segments; i++) {
         double startAngle = front ?  2*M_PI * i / (2*segments) : -2*M_PI * i / (2*segments);
@@ -370,7 +370,7 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
 }
 
 double get_orbit_radius(Body* b, ControlPanel* cp) {
-    double sunX = SCREEN_WIDTH/2; //TODO: sunX, sunY should be just 0?
+    double sunX = SCREEN_WIDTH/2;
     double sunY = SCREEN_HEIGHT/2;
     double dx = b->pos.x - sunX;
     double dy = b->pos.y - sunY;
@@ -429,9 +429,6 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     pixel.y += SCREEN_HEIGHT/2;
     return pixel;
 }
-
-
-
 
 double get_squash_factor(double angle) {
     return 1 - fabs(angle)/45;
