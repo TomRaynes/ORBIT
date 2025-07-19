@@ -69,7 +69,8 @@ void rotate_view_mode(ControlPanel* cp);
 double get_squash_factor(double angle);
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front);
 bool is_in_front(Body* b);
-double get_orbit_radius(Body* b, ControlPanel* cp);
+void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp);
+double get_pos_scale(Body* b, ControlPanel* cp);
 
 void check_for_bounce(Body* b, ControlPanel* cp);
 void check_for_bounces(SolarSystem* sol, ControlPanel* cp);

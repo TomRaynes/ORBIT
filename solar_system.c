@@ -108,7 +108,6 @@ void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
             rotate_view_mode(cp);
             reset_control_panel(cp);
             reset_solar_system(sol);
-            //adjust_zoom(cp, "reset");
             break;
         case SDLK_p:
             cp->pause = !cp->pause;
@@ -310,7 +309,7 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
 
         if (!sol->bodies[body]->in_front) {
             draw_body(r, sol->bodies[body], cp);
-            //draw_orbit_overlay(r, sol->bodies[body], cp);
+            draw_orbit_overlay(r, sol->bodies[body], cp);
         }
     }
     draw_body(r, sol->bodies[sun], cp);
@@ -321,7 +320,7 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
 
         if (sol->bodies[body]->in_front) {
             draw_body(r, sol->bodies[body], cp);
-            //draw_orbit_overlay(r, sol->bodies[body], cp);
+            draw_orbit_overlay(r, sol->bodies[body], cp);
         }
     }
 }
@@ -341,7 +340,6 @@ void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
 }
 
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
-    int segments = 180;
     double sunX = SCREEN_WIDTH/2;
     double sunY = SCREEN_HEIGHT/2;
     double dx = b->pos.x - sunX;
@@ -354,6 +352,7 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
         case planet_view: orbit_radius /= b->planet_view_scale; break;
         default: break;
     }
+    int segments = 180;
     SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
     for (int i=0; i<segments; i++) {
@@ -369,20 +368,35 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
     }
 }
 
-double get_orbit_radius(Body* b, ControlPanel* cp) {
-    double sunX = SCREEN_WIDTH/2;
-    double sunY = SCREEN_HEIGHT/2;
+void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp) {
+    double sunX = 0;
+    double sunY = 0;
     double dx = b->pos.x - sunX;
     double dy = b->pos.y - sunY;
-    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom;
+    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom / get_pos_scale(b, cp);
+    // angle between planet–sun and x-axis
+    double bodyAngle = b->pos.x > sunX ? atan(dy/dx) : atan(dy/dx) + M_PI;
+    // planet–sun–planetSurface angle (surface at point that intersects the orbit line)
+    double radiusAngle = 2*asin(0.5*get_render_size(b, cp) / orbit_radius);
 
-    switch (cp->view_mode) {
-        case true_distance: orbit_radius /= DISTANCE_SF; break;
-        case true_size: orbit_radius /= b->dist_scale; break;
-        case planet_view: orbit_radius /= b->planet_view_scale; break;
-        default: break;
+    bool positive_dx = b->pos.x - sunX > 0;
+    // initial start angle at 3D perceived intersection point of orbit line and planet
+    double startAngle = positive_dx ? bodyAngle + radiusAngle : bodyAngle - radiusAngle;
+    double nextAngle = positive_dx ? startAngle + M_PI / 180 : startAngle - M_PI / 180;
+    //double overlayFactor = get_render_size(b, cp) * (1 - get_squash_factor(cp->angle));
+    double endAngle = positive_dx ? startAngle + M_PI / 10 : startAngle - M_PI / 10;
+    SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
+
+    while ((positive_dx && nextAngle < endAngle) || (!positive_dx && nextAngle > endAngle)) {
+        int startX = SCREEN_WIDTH/2 + (int) (orbit_radius * cos(startAngle));
+        int startY = SCREEN_HEIGHT/2 + (int) (orbit_radius * sin(startAngle) * get_squash_factor(cp->angle));
+        int endX = SCREEN_WIDTH/2 + (int) (orbit_radius * cos(nextAngle));
+        int endY = SCREEN_HEIGHT/2 + (int) (orbit_radius * sin(nextAngle) * get_squash_factor(cp->angle));
+
+        SDL_RenderDrawLine(r, startX, startY, endX, endY);
+        startAngle = nextAngle;
+        nextAngle = positive_dx ? nextAngle + M_PI / 180 : nextAngle - M_PI / 180;
     }
-    return orbit_radius;
 }
 
 void adjust_zoom(ControlPanel* cp, const char* operation) {
@@ -430,6 +444,15 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     return pixel;
 }
 
+double get_pos_scale(Body* b, ControlPanel* cp) {
+    switch (cp->view_mode) {
+        case true_size: return b->dist_scale;
+        case true_distance: return DISTANCE_SF;
+        case planet_view: return b->planet_view_scale;
+        default: return -1;
+    }
+}
+
 double get_squash_factor(double angle) {
     return 1 - fabs(angle)/45;
 }
@@ -470,7 +493,6 @@ void update_orbit(Body* b, SolarSystem* sol, double rt, double g) {
     b->pos.x += b->vel.x * DT * rt;
     b->pos.y += b->vel.y * DT * rt;
 
-    //b->in_front = b->pos.y > 0 ? true : false;
     b->in_front = is_in_front(b);
 }
 
