@@ -53,7 +53,7 @@
 #define URANUS_PV_RADIUS 20
 #define NEPTUNE_PV_RADIUS 19
 
-// applied when displaying true distance
+// applied when displaying true size
 #define SUN_TRUE_RADIUS 6.9634*pow(10, 8)
 #define MERCURY_TRUE_RADIUS 2.4397*pow(10, 6)
 #define VENUS_TRUE_RADIUS 6.0518*pow(10, 6)
@@ -120,7 +120,7 @@
 #define SCREEN_WIDTH 1400
 #define SCREEN_HEIGHT 750
 #define DISTANCE_SF 7000000000
-#define RADIUS_SF 3500000 // 4642000
+#define RADIUS_SF 3500000
 #define G 6.6743*pow(10, -11)
 #define DT 3600
 #define SPEED_INCREMENT 2
@@ -129,5 +129,3 @@
 #define PERSPECTIVES 46
 #define RING_FACTOR 2.4138
 #define TRANSLATION_INCREMENT 30
-#define TD_TRANSLATION_INCREMENT 5*pow(10, 9)
-

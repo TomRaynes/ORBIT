@@ -48,10 +48,14 @@ typedef struct control_panel {
     bool pause;
     int view_mode;
     double angle;
-    int offsetX, offsetY;
+    double offsetX, offsetY;
+    bool show_orbit;
+    bool fullscreen;
+    bool show_cursor;
+    bool quit;
 } ControlPanel;
 
-typedef enum speed {slow = 1, fast = 1000} speed;
+typedef enum speed {slow = 1, fast = 100} speed;
 typedef enum gravity {low = -2, normal = 0, high = 2} gravity;
 typedef enum zoom {zoomedOut = -2, zoomDefault = 0, zoomedIn = 20} zoom;
 enum {sun = 0, mercury, venus, earth, mars, jupiter, saturn, uranus, neptune};
@@ -64,7 +68,7 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash);
 void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp);
 void update_orbit(Body* b, SolarSystem* sol, double rt, double g);
 void update_orbits(SolarSystem* sol, ControlPanel* cp);
-void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_Event e);
+void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_Event e);
 ControlPanel* init_control_panel(void);
 void reset_solar_system(SolarSystem* sol);
 void reset_control_panel(ControlPanel* panel);
@@ -81,9 +85,10 @@ void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn);
 SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory);
 void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
 void translate_origin(const char* direction, ControlPanel* cp);
-
-void check_for_bounce(Body* b, ControlPanel* cp);
-void check_for_bounces(SolarSystem* sol, ControlPanel* cp);
+void get_mouse_input(SDL_Event *event, ControlPanel* cp);
+void randomise_body_position(Body* b);
+void randomise_solar_system(SolarSystem* sol);
+void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay);
 
 
 

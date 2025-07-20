@@ -27,7 +27,6 @@ int main(void) {
     }
 
     SDL_Event e;
-    bool quit = false;
 
     SolarSystem* sol = init_solar_system();
 
@@ -37,14 +36,15 @@ int main(void) {
     load_all_textures(renderer, sol);
     ControlPanel* panel = init_control_panel();
 
-    while (!quit) {
+    while (!panel->quit) {
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
-                quit = true;
+                panel->quit = true;
             }
             if (e.type == SDL_KEYDOWN) {
-                get_control_input(renderer, panel, sol, e);
+                get_keyboard_input(window, panel, sol, e);
             }
+            get_mouse_input(&e, panel);
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -57,6 +57,7 @@ int main(void) {
         SDL_RenderPresent(renderer);
     }
 
+    // free memory
     for (int body = sun; body<=neptune; body++) {
         free(sol->bodies[body]->textures);
     }
@@ -82,13 +83,14 @@ void load_all_textures(SDL_Renderer* r, SolarSystem* sol) {
     sol->bodies[neptune]->textures = load_textures(r, "perspectives/neptune");
 }
 
-void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
+void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
     switch (e.key.keysym.sym) {
         case SDLK_ESCAPE:
-            // quit
+            cp->quit = true;
             break;
         case SDLK_f:
-            // fullscreen
+            cp->fullscreen = !cp->fullscreen;
+            SDL_SetWindowFullscreen(w, cp->fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
             break;
         case SDLK_RIGHT:
             if (cp->speed < fast) {
@@ -110,44 +112,122 @@ void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_
                 cp->gravity -= GRAVITY_INCREMENT;
             }
             break;
-        case SDLK_RIGHTBRACKET:
-            if (cp->zoom_level < zoomedIn) {
-                adjust_zoom(cp, "increment");
-            }
-            break;
-        case SDLK_LEFTBRACKET:
-            if (cp->zoom_level > zoomedOut) {
-                adjust_zoom(cp, "decrement");
-            }
-            break;
-        case SDLK_SPACE:
+        case SDLK_r: // reset
             reset_solar_system(sol);
             reset_control_panel(cp);
             break;
-        case SDLK_t:
+        case SDLK_v: // toggle view mode
             rotate_view_mode(cp);
             reset_control_panel(cp);
             reset_solar_system(sol);
             break;
-        case SDLK_p:
+        case SDLK_SPACE: // pause
             cp->pause = !cp->pause;
             break;
-        case SDLK_EQUALS:
-            if (cp->angle > 0) {
-                cp->angle--;
-            }
+        case SDLK_o: // toggle show orbit
+            cp->show_orbit = !cp->show_orbit;
             break;
-        case SDLK_MINUS:
-            if (cp->angle < 45) {
-                cp->angle++;
-            }
+        case SDLK_q:
+            randomise_solar_system(sol);
             break;
-        case SDLK_a: translate_origin("right", cp); break;
-        case SDLK_d: translate_origin("left", cp); break;
-        case SDLK_w: translate_origin("down", cp); break;
-        case SDLK_s: translate_origin("up", cp); break;
+        case SDLK_c:
+            cp->show_cursor = !cp->show_cursor;
+        SDL_ShowCursor(cp->show_cursor);
         default: break;
     }
+}
+
+void get_mouse_input(SDL_Event *event, ControlPanel* cp) {
+    static bool left_pressed = false;
+    static bool right_pressed = false;
+    static int left_initial_x = 0, left_initial_y = 0;
+    static int right_initial_y = 0;
+
+    switch (event->type) {
+        case SDL_MOUSEBUTTONDOWN:
+            if (event->button.button == SDL_BUTTON_LEFT) {
+                left_pressed = true;
+                left_initial_x = event->button.x;
+                left_initial_y = event->button.y;
+            } else if (event->button.button == SDL_BUTTON_RIGHT) {
+                right_pressed = true;
+                right_initial_y = event->button.y;
+            }
+        break;
+
+        case SDL_MOUSEBUTTONUP:
+            if (event->button.button == SDL_BUTTON_LEFT) {
+                left_pressed = false;
+            } else if (event->button.button == SDL_BUTTON_RIGHT) {
+                right_pressed = false;
+            }
+        break;
+
+        case SDL_MOUSEMOTION:
+            if (left_pressed) {
+                int delta_x = event->motion.x - left_initial_x;
+                int delta_y = event->motion.y - left_initial_y;
+                cp->offsetX += delta_x / cp->zoom;
+                cp->offsetY += delta_y / cp->zoom;
+                // Update initial position to current so that deltas are incremental
+                left_initial_x = event->motion.x;
+                left_initial_y = event->motion.y;
+            }
+            if (right_pressed) {
+                int delta_y = event->motion.y - right_initial_y;
+                cp->angle += delta_y;
+
+                if (cp->angle < 0 ) {
+                    cp->angle = 0;
+                }
+                if (cp->angle > 45) {
+                    cp->angle = 45;
+                }
+                right_initial_y = event->motion.y;
+            }
+            break;
+        case SDL_MOUSEWHEEL:
+            // Positive y is scroll up, negative is scroll down
+            cp->zoom_level -= event->wheel.y;
+
+            if (cp->zoom_level > 40) {
+                cp->zoom_level = 40;
+            }
+            if (cp->zoom_level < -40) {
+                cp->zoom_level = -40;
+            }
+            cp->zoom = pow(1.15, cp->zoom_level);
+            break;
+
+        default: break;
+    }
+}
+
+void randomise_solar_system(SolarSystem* sol) {
+    srand(time(NULL));
+
+    for (int body=mercury; body<=neptune; body++) {
+        randomise_body_position(sol->bodies[body]);
+    }
+}
+
+void randomise_body_position(Body* b) {
+    // set position
+    double radius = sqrt((b->sun->pos.x-b->pos.x)*(b->sun->pos.x-b->pos.x) + (b->sun->pos.y-b->pos.y)*(b->sun->pos.y-b->pos.y));
+    double rand_factor = 2 * radius / RAND_MAX;
+    b->pos.x = rand() * rand_factor - radius;
+    int direction = rand() - RAND_MAX/2 > 0 ? 1 : -1;
+    b->pos.y = direction * sqrt(radius*radius - b->pos.x*b->pos.x);
+
+    // set velocity
+    double velocity = sqrt(b->vel.x*b->vel.x + b->vel.y*b->vel.y);
+    double baseX = -b->pos.y;
+    double baseY = b->pos.x;
+    double magnitude = sqrt(baseX * baseX + baseY * baseY);
+
+    b->vel.x = velocity * baseX / magnitude;
+    b->vel.y = velocity * baseY / magnitude;
+
 }
 
 void translate_origin(const char* direction, ControlPanel* cp) {
@@ -173,8 +253,12 @@ ControlPanel* init_control_panel(void) {
         exit(EXIT_FAILURE);
     }
     reset_control_panel(panel);
-    panel->pause = true;
+    panel->pause = false;
     panel->view_mode = planet_view;
+    panel->show_orbit = true;
+    panel->fullscreen = false;
+    panel->show_cursor = true;
+
     return panel;
 }
 
@@ -347,39 +431,36 @@ void reset_solar_system(SolarSystem* sol) {
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
     // draw planets behind sun
     for (int body=neptune; body>sun; body--) {
-        draw_orbit(r, sol->bodies[body], cp, false);
+        if (cp->show_orbit) {
+            draw_orbit(r, sol->bodies[body], cp, false);
+        }
 
         if (!sol->bodies[body]->in_front) {
             draw_body_image(r, sol->bodies[body], cp, body==saturn);
-            draw_orbit_overlay(r, sol->bodies[body], cp);
+
+            if (cp->show_orbit) {
+                draw_orbit_overlay(r, sol->bodies[body], cp);
+            }
         }
     }
     draw_body_image(r, sol->bodies[sun], cp, false);
 
     //draw planets in front of sun
     for (int body=mercury; body<BODY_COUNT; body++) {
-        draw_orbit(r, sol->bodies[body], cp, true);
+
+        if (cp->show_orbit) {
+            draw_orbit(r, sol->bodies[body], cp, true);
+        }
 
         if (sol->bodies[body]->in_front) {
             draw_body_image(r, sol->bodies[body], cp, body==saturn);
-            draw_orbit_overlay(r, sol->bodies[body], cp);
+
+            if (cp->show_orbit) {
+                draw_orbit_overlay(r, sol->bodies[body], cp);
+            }
         }
     }
 }
-
-// void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
-//     PixelCoordinate screen_pos = get_screen_pos(b, cp, true);
-//     int screen_y = (int) screen_pos.y;
-//     int radius = get_render_size(b, cp);
-//
-//     for (int y=-radius; y<=radius; y++) {
-//         long double dx = sqrt(radius*radius - y * y);
-//         int startX = (int)(screen_pos.x - dx);
-//         int endX = (int)(screen_pos.x + dx);
-//         set_colour(r, b);
-//         SDL_RenderDrawLine(r, startX, screen_y + y, endX, screen_y + y);
-//     }
-// }
 
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
     PixelCoordinate body = get_screen_pos(b, cp, false);
@@ -389,13 +470,6 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
     double dx = body.x - sunX;
     double dy = body.y - sunY;
     double orbit_radius = sqrt(dx*dx + dy*dy);
-
-    // switch (cp->view_mode) {
-    //     case true_distance: orbit_radius /= DISTANCE_SF; break;
-    //     case true_size: orbit_radius /= b->dist_scale; break;
-    //     case planet_view: orbit_radius /= b->planet_view_scale; break;
-    //     default: break;
-    // }
     int segments = 180;
     SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
@@ -500,37 +574,53 @@ void update_orbits(SolarSystem* sol, ControlPanel* cp) {
     }
 }
 
+// Leap Frog method
 void update_orbit(Body* b, SolarSystem* sol, double rt, double g) {
+    double ax, ay;
+    // calculate acceleration
+    calculate_acceleration(b, sol, &ax, &ay);
+    // half step velocity update
+    b->vel.x += 0.5 * ax * DT * rt * g;
+    b->vel.y += 0.5 * ay * DT * rt * g;
+    // full step position
+    b->pos.x += b->vel.x * DT * rt;
+    b->pos.y += b->vel.y * DT * rt;
+    // recalculate acceleration
+    calculate_acceleration(b, sol, &ax, &ay);
+    // half step velocity
+    b->vel.x += 0.5 * ax * DT * rt * g;
+    b->vel.y += 0.5 * ay * DT * rt * g;
 
-    double ax = 0.0, ay = 0.0;
+    // update rendering group
+    b->in_front = is_in_front(b);
+}
+
+void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay) {
+    *ax = 0.0;
+    *ay = 0.0;
 
     for (int i = 0; i < BODY_COUNT; i++) {
         Body* other = sol->bodies[i];
 
-        if (other == b) continue;
-
+        if (other == b) {
+            continue;
+        }
         double dx = other->pos.x - b->pos.x;
         double dy = other->pos.y - b->pos.y;
         double dist_sq = dx * dx + dy * dy;
 
-        // Avoid division by zero
-        if (dist_sq < 1e5) continue;
-
+        // avoid dividing by zero
+        if (dist_sq < pow(10, -5)) {
+            continue;
+        }
         double dist = sqrt(dist_sq);
-        double force = G * other->mass / (dist_sq * dist);  // Gm/r^3
+        double force = G * other->mass / (dist_sq * dist);
 
-        ax += force * dx;
-        ay += force * dy;
+        *ax += force * dx;
+        *ay += force * dy;
     }
-
-    b->vel.x += ax * DT * rt * g;
-    b->vel.y += ay * DT * rt * g;
-
-    b->pos.x += b->vel.x * DT * rt;
-    b->pos.y += b->vel.y * DT * rt;
-
-    b->in_front = is_in_front(b);
 }
+
 
 bool is_in_front(Body* b) {
     double current_radius = sqrt(b->pos.x*b->pos.x + b->pos.y*b->pos.y);
