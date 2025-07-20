@@ -142,26 +142,26 @@ void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_
                 cp->angle++;
             }
             break;
-        case SDLK_a: translate_origin("left", cp); break;
-        case SDLK_d: translate_origin("right", cp); break;
-        case SDLK_w: translate_origin("up", cp); break;
-        case SDLK_s: translate_origin("down", cp); break;
+        case SDLK_a: translate_origin("right", cp); break;
+        case SDLK_d: translate_origin("left", cp); break;
+        case SDLK_w: translate_origin("down", cp); break;
+        case SDLK_s: translate_origin("up", cp); break;
         default: break;
     }
 }
 
 void translate_origin(const char* direction, ControlPanel* cp) {
     if (strcmp(direction, "right") == 0) {
-        cp->offsetX += TRANSLATION_INCREMENT;
+        cp->offsetX += TRANSLATION_INCREMENT / cp->zoom;
     }
     else if (strcmp(direction, "left") == 0) {
-        cp->offsetX -= TRANSLATION_INCREMENT;
+        cp->offsetX -= TRANSLATION_INCREMENT / cp->zoom;
     }
     else if (strcmp(direction, "up") == 0) {
-        cp->offsetY -= TRANSLATION_INCREMENT;
+        cp->offsetY -= TRANSLATION_INCREMENT / cp->zoom;
     }
     else if (strcmp(direction, "down") == 0) {
-        cp->offsetY += TRANSLATION_INCREMENT;
+        cp->offsetY += TRANSLATION_INCREMENT / cp->zoom;
     }
 }
 
@@ -367,33 +367,35 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
     }
 }
 
-void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
-    PixelCoordinate screen_pos = get_screen_pos(b, cp);
-    int screen_y = (int) screen_pos.y;
-    int radius = get_render_size(b, cp);
-
-    for (int y=-radius; y<=radius; y++) {
-        long double dx = sqrt(radius*radius - y * y);
-        int startX = (int)(screen_pos.x - dx);
-        int endX = (int)(screen_pos.x + dx);
-        set_colour(r, b);
-        SDL_RenderDrawLine(r, startX, screen_y + y, endX, screen_y + y);
-    }
-}
+// void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp) {
+//     PixelCoordinate screen_pos = get_screen_pos(b, cp, true);
+//     int screen_y = (int) screen_pos.y;
+//     int radius = get_render_size(b, cp);
+//
+//     for (int y=-radius; y<=radius; y++) {
+//         long double dx = sqrt(radius*radius - y * y);
+//         int startX = (int)(screen_pos.x - dx);
+//         int endX = (int)(screen_pos.x + dx);
+//         set_colour(r, b);
+//         SDL_RenderDrawLine(r, startX, screen_y + y, endX, screen_y + y);
+//     }
+// }
 
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
-    double sunX = SCREEN_WIDTH/2;
-    double sunY = SCREEN_HEIGHT/2;
-    double dx = b->pos.x - sunX;
-    double dy = b->pos.y - sunY;
-    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom;
+    PixelCoordinate body = get_screen_pos(b, cp, false);
+    PixelCoordinate sun = get_screen_pos(b->sun, cp, false);
+    double sunX = sun.x;
+    double sunY = sun.y;
+    double dx = body.x - sunX;
+    double dy = body.y - sunY;
+    double orbit_radius = sqrt(dx*dx + dy*dy);
 
-    switch (cp->view_mode) {
-        case true_distance: orbit_radius /= DISTANCE_SF; break;
-        case true_size: orbit_radius /= b->dist_scale; break;
-        case planet_view: orbit_radius /= b->planet_view_scale; break;
-        default: break;
-    }
+    // switch (cp->view_mode) {
+    //     case true_distance: orbit_radius /= DISTANCE_SF; break;
+    //     case true_size: orbit_radius /= b->dist_scale; break;
+    //     case planet_view: orbit_radius /= b->planet_view_scale; break;
+    //     default: break;
+    // }
     int segments = 180;
     SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
@@ -411,17 +413,19 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
 }
 
 void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp) {
-    double sunX = 0;
-    double sunY = 0;
-    double dx = b->pos.x - sunX;
-    double dy = b->pos.y - sunY;
-    double orbit_radius = sqrt(dx*dx + dy*dy) * cp->zoom / get_pos_scale(b, cp);
+    PixelCoordinate body = get_screen_pos(b, cp, false);
+    PixelCoordinate sun = get_screen_pos(b->sun, cp, false);
+    double sunX = sun.x;
+    double sunY = sun.y;
+    double dx = body.x - sunX;
+    double dy = body.y - sunY;
+    double orbit_radius = sqrt(dx*dx + dy*dy);
     // angle between planet–sun and x-axis
-    double bodyAngle = b->pos.x > sunX ? atan(dy/dx) : atan(dy/dx) + M_PI;
+    double bodyAngle = body.x > sunX ? atan(dy/dx) : atan(dy/dx) + M_PI;
     // planet–sun–planetSurface angle (surface at point that intersects the orbit line)
     double radiusAngle = 2*asin(0.5*get_render_size(b, cp) / orbit_radius);
 
-    bool positive_dx = b->pos.x - sunX > 0;
+    bool positive_dx = body.x > sunX;
     // initial start angle at 3D perceived intersection point of orbit line and planet
     double startAngle = positive_dx ? bodyAngle + radiusAngle : bodyAngle - radiusAngle;
     double nextAngle = positive_dx ? startAngle + M_PI / 180 : startAngle - M_PI / 180;
@@ -429,10 +433,10 @@ void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp) {
     SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
     while ((positive_dx && nextAngle < endAngle) || (!positive_dx && nextAngle > endAngle)) {
-        int startX = SCREEN_WIDTH/2 + (int) (orbit_radius * cos(startAngle));
-        int startY = SCREEN_HEIGHT/2 + (int) (orbit_radius * sin(startAngle) * get_squash_factor(cp->angle));
-        int endX = SCREEN_WIDTH/2 + (int) (orbit_radius * cos(nextAngle));
-        int endY = SCREEN_HEIGHT/2 + (int) (orbit_radius * sin(nextAngle) * get_squash_factor(cp->angle));
+        int startX = sunX + (int) (orbit_radius * cos(startAngle));
+        int startY = sunY + (int) (orbit_radius * sin(startAngle) * get_squash_factor(cp->angle));
+        int endX = sunX + (int) (orbit_radius * cos(nextAngle));
+        int endY = sunY + (int) (orbit_radius * sin(nextAngle) * get_squash_factor(cp->angle));
 
         SDL_RenderDrawLine(r, startX, startY, endX, endY);
         startAngle = nextAngle;
@@ -462,13 +466,16 @@ int get_render_size(Body* b, ControlPanel* cp) {
     }
 }
 
-PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
+PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash) {
     PixelCoordinate pixel;
     double scale = get_pos_scale(b, cp);
     pixel.x = b->pos.x * cp->zoom / scale;
     pixel.y = b->pos.y * cp->zoom / scale;
     pixel.x += SCREEN_WIDTH/2 + cp->offsetX*cp->zoom;
-    pixel.y *= get_squash_factor(cp->angle);
+
+    if (squash) {
+        pixel.y *= get_squash_factor(cp->angle);
+    }
     pixel.y += SCREEN_HEIGHT/2 + cp->offsetY*cp->zoom;
     return pixel;
 }
@@ -564,7 +571,7 @@ SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
 }
 
 void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn) {
-    PixelCoordinate pos = get_screen_pos(b, cp);
+    PixelCoordinate pos = get_screen_pos(b, cp, true);
     int base_radius = get_render_size(b, cp);
     int radius = isSaturn ? base_radius * RING_FACTOR : base_radius;
     pos.x -= radius;

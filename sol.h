@@ -60,7 +60,7 @@ enum {left = -1, up = -1, right = 1, down = 1};
 
 SolarSystem* init_solar_system(void);
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp);
-PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp);
+PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash);
 void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp);
 void update_orbit(Body* b, SolarSystem* sol, double rt, double g);
 void update_orbits(SolarSystem* sol, ControlPanel* cp);
