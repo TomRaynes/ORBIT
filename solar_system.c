@@ -142,45 +142,26 @@ void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_
                 cp->angle++;
             }
             break;
-        case SDLK_a: translate_origin(sol, "left", cp); break;
-        case SDLK_d: translate_origin(sol, "right", cp); break;
-        case SDLK_w: translate_origin(sol, "forward", cp); break;
-        case SDLK_s: translate_origin(sol, "backward", cp); break;
+        case SDLK_a: translate_origin("left", cp); break;
+        case SDLK_d: translate_origin("right", cp); break;
+        case SDLK_w: translate_origin("up", cp); break;
+        case SDLK_s: translate_origin("down", cp); break;
         default: break;
     }
 }
 
-void translate_origin(SolarSystem* sol, const char* direction, ControlPanel* cp) {
+void translate_origin(const char* direction, ControlPanel* cp) {
     if (strcmp(direction, "right") == 0) {
-        translate_bodies(sol, right, cp);
-        // sol->sun.pos.x += TRANSLATION_INCREMENT;
-        // cp->originX = sol->sun.pos.x;
+        cp->offsetX += TRANSLATION_INCREMENT;
     }
     else if (strcmp(direction, "left") == 0) {
-        translate_bodies(sol, left, cp);
-        // sol->sun.pos.x -= TRANSLATION_INCREMENT;
-        // cp->originX = sol->sun.pos.x;
+        cp->offsetX -= TRANSLATION_INCREMENT;
     }
-    else if (strcmp(direction, "forward") == 0) {
-        //cp->originZ += TRANSLATION_INCREMENT;
-
-        adjust_zoom(cp, "increment");
-        //cp->originX += TRANSLATION_INCREMENT * ZOOM_INCREMENT;
+    else if (strcmp(direction, "up") == 0) {
+        cp->offsetY -= TRANSLATION_INCREMENT;
     }
-    else if (strcmp(direction, "backward") == 0) {
-        //cp->originZ -= TRANSLATION_INCREMENT;
-        adjust_zoom(cp, "decrement");
-        //cp->originX -= TRANSLATION_INCREMENT * ZOOM_INCREMENT;
-
-    }
-    // SDL_Rect origin = { cp->originX, cp->originZ, SCREEN_WIDTH, SCREEN_HEIGHT };
-    // SDL_RenderSetViewport(r, &origin);
-}
-
-void translate_bodies(SolarSystem* sol, int direction, ControlPanel* cp) {
-    double increment = cp->view_mode == true_distance ? TD_TRANSLATION_INCREMENT : TRANSLATION_INCREMENT;
-    for (int body=sun; body<=neptune; body++) {
-        sol->bodies[body]->pos.x += direction * increment;
+    else if (strcmp(direction, "up") == 0) {
+        cp->offsetY += TRANSLATION_INCREMENT;
     }
 }
 
@@ -212,7 +193,7 @@ void reset_control_panel(ControlPanel* panel) {
     panel->zoom = 1;
     panel->zoom_level = zoomDefault;
     panel->angle = 25;
-    panel->originX = SCREEN_WIDTH/2;
+    panel->offsetX = panel->offsetY = 0;
 }
 
 void rotate_view_mode(ControlPanel* cp) {
@@ -495,13 +476,9 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     double scale = get_scale(b, cp);
     pixel.x = b->pos.x * cp->zoom / scale;
     pixel.y = b->pos.y * cp->zoom / scale;
-
-    if (!b->is_sun) {
-        pixel.x += get_screen_pos(b->sun, cp).x - SCREEN_WIDTH/2;
-    }
-    pixel.x += SCREEN_WIDTH/2;
+    pixel.x += SCREEN_WIDTH/2 + cp->offsetX*cp->zoom;
     pixel.y *= get_squash_factor(cp->angle);
-    pixel.y += SCREEN_HEIGHT/2;
+    pixel.y += SCREEN_HEIGHT/2 + cp->offsetY*cp->zoom;
     return pixel;
 }
 
