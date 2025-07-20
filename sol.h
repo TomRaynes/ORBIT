@@ -81,7 +81,6 @@ void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn);
 SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory);
 void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
 void translate_origin(const char* direction, ControlPanel* cp);
-double get_scale(Body* b, ControlPanel* cp);
 
 void check_for_bounce(Body* b, ControlPanel* cp);
 void check_for_bounces(SolarSystem* sol, ControlPanel* cp);

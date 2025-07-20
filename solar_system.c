@@ -160,17 +160,8 @@ void translate_origin(const char* direction, ControlPanel* cp) {
     else if (strcmp(direction, "up") == 0) {
         cp->offsetY -= TRANSLATION_INCREMENT;
     }
-    else if (strcmp(direction, "up") == 0) {
+    else if (strcmp(direction, "down") == 0) {
         cp->offsetY += TRANSLATION_INCREMENT;
-    }
-}
-
-double get_scale(Body* b, ControlPanel* cp) {
-    switch (cp->view_mode) {
-        case true_size: return b->dist_scale;
-        case true_distance: return DISTANCE_SF;
-        case planet_view: return b->planet_view_scale;
-        default: return -1;
     }
 }
 
@@ -473,7 +464,7 @@ int get_render_size(Body* b, ControlPanel* cp) {
 
 PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     PixelCoordinate pixel;
-    double scale = get_scale(b, cp);
+    double scale = get_pos_scale(b, cp);
     pixel.x = b->pos.x * cp->zoom / scale;
     pixel.y = b->pos.y * cp->zoom / scale;
     pixel.x += SCREEN_WIDTH/2 + cp->offsetX*cp->zoom;
