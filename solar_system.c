@@ -30,6 +30,10 @@ int main(void) {
     bool quit = false;
 
     SolarSystem* sol = init_solar_system();
+
+    for (int body=sun; body<=neptune; body++) {
+        sol->bodies[body]->sun = sol->bodies[sun];
+    }
     load_all_textures(renderer, sol);
     ControlPanel* panel = init_control_panel();
 
@@ -39,7 +43,7 @@ int main(void) {
                 quit = true;
             }
             if (e.type == SDL_KEYDOWN) {
-                get_control_input(panel, sol, e);
+                get_control_input(renderer, panel, sol, e);
             }
         }
 
@@ -78,7 +82,7 @@ void load_all_textures(SDL_Renderer* r, SolarSystem* sol) {
     sol->bodies[neptune]->textures = load_textures(r, "perspectives/neptune");
 }
 
-void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
+void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
     switch (e.key.keysym.sym) {
         case SDLK_ESCAPE:
             // quit
@@ -137,9 +141,55 @@ void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
             if (cp->angle < 45) {
                 cp->angle++;
             }
-        break;
-        default:
             break;
+        case SDLK_a: translate_origin(sol, "left", cp); break;
+        case SDLK_d: translate_origin(sol, "right", cp); break;
+        case SDLK_w: translate_origin(sol, "forward", cp); break;
+        case SDLK_s: translate_origin(sol, "backward", cp); break;
+        default: break;
+    }
+}
+
+void translate_origin(SolarSystem* sol, const char* direction, ControlPanel* cp) {
+    if (strcmp(direction, "right") == 0) {
+        translate_bodies(sol, right, cp);
+        // sol->sun.pos.x += TRANSLATION_INCREMENT;
+        // cp->originX = sol->sun.pos.x;
+    }
+    else if (strcmp(direction, "left") == 0) {
+        translate_bodies(sol, left, cp);
+        // sol->sun.pos.x -= TRANSLATION_INCREMENT;
+        // cp->originX = sol->sun.pos.x;
+    }
+    else if (strcmp(direction, "forward") == 0) {
+        //cp->originZ += TRANSLATION_INCREMENT;
+
+        adjust_zoom(cp, "increment");
+        //cp->originX += TRANSLATION_INCREMENT * ZOOM_INCREMENT;
+    }
+    else if (strcmp(direction, "backward") == 0) {
+        //cp->originZ -= TRANSLATION_INCREMENT;
+        adjust_zoom(cp, "decrement");
+        //cp->originX -= TRANSLATION_INCREMENT * ZOOM_INCREMENT;
+
+    }
+    // SDL_Rect origin = { cp->originX, cp->originZ, SCREEN_WIDTH, SCREEN_HEIGHT };
+    // SDL_RenderSetViewport(r, &origin);
+}
+
+void translate_bodies(SolarSystem* sol, int direction, ControlPanel* cp) {
+    double increment = cp->view_mode == true_distance ? TD_TRANSLATION_INCREMENT : TRANSLATION_INCREMENT;
+    for (int body=sun; body<=neptune; body++) {
+        sol->bodies[body]->pos.x += direction * increment;
+    }
+}
+
+double get_scale(Body* b, ControlPanel* cp) {
+    switch (cp->view_mode) {
+        case true_size: return b->dist_scale;
+        case true_distance: return DISTANCE_SF;
+        case planet_view: return b->planet_view_scale;
+        default: return -1;
     }
 }
 
@@ -162,6 +212,7 @@ void reset_control_panel(ControlPanel* panel) {
     panel->zoom = 1;
     panel->zoom_level = zoomDefault;
     panel->angle = 25;
+    panel->originX = SCREEN_WIDTH/2;
 }
 
 void rotate_view_mode(ControlPanel* cp) {
@@ -189,6 +240,9 @@ void reset_solar_system(SolarSystem* sol) {
     sol->sun.true_radius = SUN_TRUE_RADIUS;
     sol->sun.pv_radius = SUN_PV_RADIUS;
     sol->sun.dist_scale = sol->sun.planet_view_scale = SUN_DIST_SF;
+    sol->sun.pos.x = 0;
+    sol->sun.pos.y = 0;
+    sol->sun.is_sun = true;
 
     sol->mercury.mass = MERCURY_MASS;
     sol->mercury.radius = MERCURY_RADIUS;
@@ -438,20 +492,12 @@ int get_render_size(Body* b, ControlPanel* cp) {
 
 PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp) {
     PixelCoordinate pixel;
-    pixel.x = b->pos.x * cp->zoom;
-    pixel.y = b->pos.y * cp->zoom;
+    double scale = get_scale(b, cp);
+    pixel.x = b->pos.x * cp->zoom / scale;
+    pixel.y = b->pos.y * cp->zoom / scale;
 
-    if (cp->view_mode == true_size) {
-        pixel.x /= b->dist_scale;
-        pixel.y /= b->dist_scale;
-    }
-    else if (cp->view_mode == true_distance) {
-        pixel.x /= DISTANCE_SF;
-        pixel.y /= DISTANCE_SF;
-    }
-    else {
-        pixel.x /= b->planet_view_scale;
-        pixel.y /= b->planet_view_scale;
+    if (!b->is_sun) {
+        pixel.x += get_screen_pos(b->sun, cp).x - SCREEN_WIDTH/2;
     }
     pixel.x += SCREEN_WIDTH/2;
     pixel.y *= get_squash_factor(cp->angle);

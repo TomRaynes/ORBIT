@@ -29,7 +29,9 @@ typedef struct body {
     double dist_scale; // specific scale for true size view mode
     double planet_view_scale; // specific scale for planet view mode
     bool in_front;
+    bool is_sun;
     SDL_Texture** textures;
+    struct body* sun;
 } Body;
 
 typedef struct solar_system {
@@ -46,6 +48,7 @@ typedef struct control_panel {
     bool pause;
     int view_mode;
     double angle;
+    int originX, originZ;
 } ControlPanel;
 
 typedef enum speed {slow = 1, fast = 1000} speed;
@@ -53,6 +56,7 @@ typedef enum gravity {low = -2, normal = 0, high = 2} gravity;
 typedef enum zoom {zoomedOut = -2, zoomDefault = 0, zoomedIn = 20} zoom;
 enum {sun = 0, mercury, venus, earth, mars, jupiter, saturn, uranus, neptune};
 enum {true_distance, true_size, planet_view, RESET_VIEW};
+enum {left = -1, right = 1};
 
 SolarSystem* init_solar_system(void);
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp);
@@ -60,7 +64,7 @@ PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp);
 void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp);
 void update_orbit(Body* b, SolarSystem* sol, double rt, double g);
 void update_orbits(SolarSystem* sol, ControlPanel* cp);
-void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e);
+void get_control_input(SDL_Renderer* r, ControlPanel* cp, SolarSystem* sol, SDL_Event e);
 ControlPanel* init_control_panel(void);
 void reset_solar_system(SolarSystem* sol);
 void reset_control_panel(ControlPanel* panel);
@@ -76,6 +80,9 @@ double get_pos_scale(Body* b, ControlPanel* cp);
 void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn);
 SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory);
 void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
+void translate_origin(SolarSystem* sol, const char* direction, ControlPanel* cp);
+void translate_bodies(SolarSystem* sol, int direction, ControlPanel* cp);
+double get_scale(Body* b, ControlPanel* cp);
 
 void check_for_bounce(Body* b, ControlPanel* cp);
 void check_for_bounces(SolarSystem* sol, ControlPanel* cp);
