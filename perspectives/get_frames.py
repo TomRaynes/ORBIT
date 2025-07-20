@@ -5,8 +5,8 @@ import os
 
 num_frames = 46
 angle_step_deg = 2
-radius = 5
-output_path = "/Users/tomraynes/Desktop/MSc CS/Programming in C/Projects/Orbit/frames/sun"
+radius = 8
+output_path = "/Users/tomraynes/Desktop/MSc CS/Programming in C/Projects/Orbit/frames/saturn_ring"
 
 os.makedirs(bpy.path.abspath(output_path), exist_ok=True)
 
@@ -16,8 +16,8 @@ camera = bpy.data.objects['Camera']
 scene = bpy.context.scene
 scene.camera = camera
 scene.render.engine = 'CYCLES'
-scene.render.resolution_x = 1024
-scene.render.resolution_y = 1024
+scene.render.resolution_x = 650
+scene.render.resolution_y = 650
 scene.render.resolution_percentage = 100
 scene.render.film_transparent = True
 scene.render.image_settings.file_format = 'PNG'
@@ -47,7 +47,7 @@ def set_camera_position(i):
 for i in range(num_frames):
     print(f"Rendering frame {i+1}/{num_frames}")
     set_camera_position(i)
-    scene.render.filepath = os.path.join(output_path, f"sun{i+1:02d}.png")
+    scene.render.filepath = os.path.join(output_path, f"{i+1:02d}.png")
     bpy.ops.render.render(write_still=True)
 
 print("Rendering Complete")

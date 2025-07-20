@@ -3,6 +3,9 @@ project(Orbit C)
 
 set(CMAKE_C_STANDARD 99)
 
+include_directories(/usr/local/include/SDL2)
+link_directories(/usr/local/lib)
+
 add_executable(Orbit main.c
         defs.h
         newton.c
@@ -17,3 +20,5 @@ add_executable(Orbit main.c
         constants.h
         gravity_box.c
         gravity_box.h)
+
+target_link_libraries(Orbit SDL SDL_image)

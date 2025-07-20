@@ -45,7 +45,7 @@ if [ "$1" = "build" ]; then
 fi
 
 if [ "$1" = "sdl" ]; then
-    gcc "${BASENAME}.c" -Wall -Wextra -pedantic -std=c99 -Wvla -Wfloat-equal -g3 -fsanitize=address -fsanitize=undefined -o "$BASENAME" -lm `pkg-config sdl2 --libs`
+    gcc "${BASENAME}.c" -Wall -Wextra -pedantic -std=c99 -Wvla -Wfloat-equal -g3 -fsanitize=address -fsanitize=undefined -o "$BASENAME" -lm `pkg-config --cflags --libs sdl2 SDL2_image`
     if [ $? -eq 0 ]; then
         echo "'$2' was compiled successfully"
     else

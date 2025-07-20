@@ -30,6 +30,7 @@ int main(void) {
     bool quit = false;
 
     SolarSystem* sol = init_solar_system();
+    load_all_textures(renderer, sol);
     ControlPanel* panel = init_control_panel();
 
     while (!quit) {
@@ -52,6 +53,9 @@ int main(void) {
         SDL_RenderPresent(renderer);
     }
 
+    for (int body = sun; body<=neptune; body++) {
+        free(sol->bodies[body]->textures);
+    }
     free(sol);
     free(panel);
 
@@ -60,6 +64,18 @@ int main(void) {
     SDL_Quit();
 
     return 0;
+}
+
+void load_all_textures(SDL_Renderer* r, SolarSystem* sol) {
+    sol->bodies[sun]->textures = load_textures(r, "perspectives/sun");
+    sol->bodies[mercury]->textures = load_textures(r, "perspectives/mercury");
+    sol->bodies[venus]->textures = load_textures(r, "perspectives/venus");
+    sol->bodies[earth]->textures = load_textures(r, "perspectives/earth");
+    sol->bodies[mars]->textures = load_textures(r, "perspectives/mars");
+    sol->bodies[jupiter]->textures = load_textures(r, "perspectives/jupiter");
+    sol->bodies[saturn]->textures = load_textures(r, "perspectives/saturn_ring");
+    sol->bodies[uranus]->textures = load_textures(r, "perspectives/uranus");
+    sol->bodies[neptune]->textures = load_textures(r, "perspectives/neptune");
 }
 
 void get_control_input(ControlPanel* cp, SolarSystem* sol, SDL_Event e) {
@@ -308,18 +324,18 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
         draw_orbit(r, sol->bodies[body], cp, false);
 
         if (!sol->bodies[body]->in_front) {
-            draw_body(r, sol->bodies[body], cp);
+            draw_body_image(r, sol->bodies[body], cp, body==saturn);
             draw_orbit_overlay(r, sol->bodies[body], cp);
         }
     }
-    draw_body(r, sol->bodies[sun], cp);
+    draw_body_image(r, sol->bodies[sun], cp, false);
 
     //draw planets in front of sun
     for (int body=mercury; body<BODY_COUNT; body++) {
         draw_orbit(r, sol->bodies[body], cp, true);
 
         if (sol->bodies[body]->in_front) {
-            draw_body(r, sol->bodies[body], cp);
+            draw_body_image(r, sol->bodies[body], cp, body==saturn);
             draw_orbit_overlay(r, sol->bodies[body], cp);
         }
     }
@@ -383,8 +399,7 @@ void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp) {
     // initial start angle at 3D perceived intersection point of orbit line and planet
     double startAngle = positive_dx ? bodyAngle + radiusAngle : bodyAngle - radiusAngle;
     double nextAngle = positive_dx ? startAngle + M_PI / 180 : startAngle - M_PI / 180;
-    //double overlayFactor = get_render_size(b, cp) * (1 - get_squash_factor(cp->angle));
-    double endAngle = positive_dx ? startAngle + M_PI / 10 : startAngle - M_PI / 10;
+    double endAngle = positive_dx ? startAngle + M_PI / 2 : startAngle - M_PI / 2;
     SDL_SetRenderDrawColor(r, 100, 80, 80, 255);
 
     while ((positive_dx && nextAngle < endAngle) || (!positive_dx && nextAngle > endAngle)) {
@@ -505,5 +520,43 @@ void set_colour(SDL_Renderer* r, Body* b) {
     SDL_SetRenderDrawColor(r, b->col.r, b->col.g, b->col.b, PLANET_COLOUR_OPACITY);
 }
 
+SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
+    SDL_Texture** textures = malloc(PERSPECTIVES * sizeof(SDL_Texture*));
 
+    if (textures == NULL) {
+        fprintf(stderr, "ERROR: Failed to create texture array.\n");
+        return NULL;
+    }
+    char path[500];
+
+    for (int i = 0; i < PERSPECTIVES; ++i) {
+        snprintf(path, sizeof(path), "%s/%02d.png", directory, i + 1);
+        SDL_Surface* surface = IMG_Load(path);
+
+        if (!surface) {
+            fprintf(stderr, "ERROR: Failed to load image %s: %s\n", path, IMG_GetError());
+            textures[i] = NULL;
+            continue;
+        }
+
+        textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
+        SDL_FreeSurface(surface);
+
+        if (!textures[i]) {
+            fprintf(stderr, "ERROR: Failed to create texture from %s: %s\n", path, SDL_GetError());
+        }
+    }
+    return textures;
+}
+
+void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn) {
+    PixelCoordinate pos = get_screen_pos(b, cp);
+    int base_radius = get_render_size(b, cp);
+    int radius = isSaturn ? base_radius * RING_FACTOR : base_radius;
+    pos.x -= radius;
+    pos.y -= radius;
+    SDL_Rect position = {pos.x, pos.y, 2*radius, 2*radius};
+    SDL_Texture* texture = b->textures[(int) cp->angle];
+    SDL_RenderCopy(r, texture, NULL, &position);
+}
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <SDL.h>
+#include <SDL_image.h>
 #include <stdbool.h>
 
 #define BODY_COUNT 9
@@ -28,6 +29,7 @@ typedef struct body {
     double dist_scale; // specific scale for true size view mode
     double planet_view_scale; // specific scale for planet view mode
     bool in_front;
+    SDL_Texture** textures;
 } Body;
 
 typedef struct solar_system {
@@ -71,6 +73,9 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front);
 bool is_in_front(Body* b);
 void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp);
 double get_pos_scale(Body* b, ControlPanel* cp);
+void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn);
+SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory);
+void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
 
 void check_for_bounce(Body* b, ControlPanel* cp);
 void check_for_bounces(SolarSystem* sol, ControlPanel* cp);
