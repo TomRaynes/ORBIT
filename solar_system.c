@@ -26,8 +26,9 @@ int main(void) {
         return 1;
     }
 
+    SDL_Cursor *crosshair = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_CROSSHAIR);
+    SDL_SetCursor(crosshair);
     SDL_Event e;
-
     SolarSystem* sol = init_solar_system();
 
     for (int body=sun; body<=neptune; body++) {
@@ -52,6 +53,9 @@ int main(void) {
 
         if (!panel->pause) {
             update_orbits(sol, panel);
+        }
+        if (panel->tracked_body != NULL) {
+            track_body(panel);
         }
         draw_solar_system(renderer, sol, panel);
         SDL_RenderPresent(renderer);
@@ -105,11 +109,13 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
         case SDLK_UP:
             if (cp->gravity < high) {
                 cp->gravity += GRAVITY_INCREMENT;
+                cp->gravity_changed = true;
             }
             break;
         case SDLK_DOWN:
             if (cp->gravity > low) {
                 cp->gravity -= GRAVITY_INCREMENT;
+                cp->gravity_changed = true;
             }
             break;
         case SDLK_r: // reset
@@ -145,7 +151,23 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol) {
 
     switch (event->type) {
         case SDL_MOUSEBUTTONDOWN:
+            // if SHIFT + left click
+            if (SDL_GetModState() & KMOD_SHIFT && event->button.button == SDL_BUTTON_LEFT) {
+                Body* b = get_body_from_mouse_pos(sol, event->motion, cp);
+
+                if (b != NULL) {
+                    cp->tracked_body = b;
+                    //cp->tracked_pos = get_screen_pos(b, cp, true, true);
+                }
+                else {
+                    cp->tracked_body = NULL;
+                    cp->offsetX = 0;
+                    cp->offsetY = 0;
+                }
+                return;
+            }
             if (event->button.button == SDL_BUTTON_LEFT) {
+                cp->tracked_body = NULL;
                 left_pressed = true;
                 left_initial_x = event->button.x;
                 left_initial_y = event->button.y;
@@ -183,7 +205,7 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol) {
                 PixelCoordinate oldPos;
 
                 if (cp->hover_body != NULL) {
-                    oldPos = get_screen_pos(cp->hover_body, cp, true);
+                    oldPos = get_screen_pos(cp->hover_body, cp, true, true);
                 }
                 cp->angle += delta_y;
 
@@ -219,22 +241,37 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol) {
 }
 
 double get_offset_correction(Body* b, PixelCoordinate oldPos, ControlPanel* cp) {
-    PixelCoordinate pos = get_screen_pos(b, cp, true);
+    PixelCoordinate pos = get_screen_pos(b, cp, true, true);
     return (pos.y - oldPos.y) / cp->zoom;
 }
 
 Body* get_body_from_mouse_pos(SolarSystem* sol, SDL_MouseMotionEvent mouse, ControlPanel* cp) {
-    for (int body=sun; body<=neptune; body++) {
+    for (int body=neptune; body>=mercury; body--) {
         if (is_hovering_on_body(sol->bodies[body], mouse.x, mouse.y, cp)) {
-            printf("Hovering on body %i\n", body);
-            return sol->bodies[body];
+            if (sol->bodies[body]->in_front) {
+                return sol->bodies[body];
+            }
+        }
+    }
+    for (int body=mercury; body<=neptune; body++) {
+        if (is_hovering_on_body(sol->bodies[body], mouse.x, mouse.y, cp)) {
+            if (!sol->bodies[body]->in_front) {
+                return sol->bodies[body];
+
+            }
         }
     }
     return NULL;
 }
 
+void track_body(ControlPanel* cp) {
+    PixelCoordinate pos = get_screen_pos(cp->tracked_body, cp, true, false);
+    cp->offsetX = (SCREEN_WIDTH/2 - pos.x) / cp->zoom;
+    cp->offsetY = (SCREEN_HEIGHT/2 - pos.y) / cp->zoom;
+}
+
 bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp) {
-    PixelCoordinate pos = get_screen_pos(b, cp, true);
+    PixelCoordinate pos = get_screen_pos(b, cp, true, true);
     int radius = get_render_size(b, cp);
     bool alignedX = mouseX > pos.x - radius && mouseX < pos.x + radius;
     bool alignedY = mouseY > pos.y - radius && mouseY < pos.y + radius;
@@ -307,6 +344,9 @@ void reset_control_panel(ControlPanel* panel) {
     panel->zoom_level = zoomDefault;
     panel->angle = 25;
     panel->offsetX = panel->offsetY = 0;
+    panel->tracked_body = NULL;
+    panel->gravity_changed = false;
+    panel->show_orbit = true;
 }
 
 void rotate_view_mode(ControlPanel* cp) {
@@ -469,14 +509,14 @@ void reset_solar_system(SolarSystem* sol) {
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
     // draw planets behind sun
     for (int body=neptune; body>sun; body--) {
-        if (cp->show_orbit) {
+        if (cp->show_orbit && !cp->gravity_changed) {
             draw_orbit(r, sol->bodies[body], cp, false);
         }
 
         if (!sol->bodies[body]->in_front) {
             draw_body_image(r, sol->bodies[body], cp, body==saturn);
 
-            if (cp->show_orbit) {
+            if (cp->show_orbit && !cp->gravity_changed) {
                 draw_orbit_overlay(r, sol->bodies[body], cp);
             }
         }
@@ -486,14 +526,14 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
     //draw planets in front of sun
     for (int body=mercury; body<BODY_COUNT; body++) {
 
-        if (cp->show_orbit) {
+        if (cp->show_orbit && !cp->gravity_changed) {
             draw_orbit(r, sol->bodies[body], cp, true);
         }
 
         if (sol->bodies[body]->in_front) {
             draw_body_image(r, sol->bodies[body], cp, body==saturn);
 
-            if (cp->show_orbit) {
+            if (cp->show_orbit && !cp->gravity_changed) {
                 draw_orbit_overlay(r, sol->bodies[body], cp);
             }
         }
@@ -501,8 +541,8 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
 }
 
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
-    PixelCoordinate body = get_screen_pos(b, cp, false);
-    PixelCoordinate sun = get_screen_pos(b->sun, cp, false);
+    PixelCoordinate body = get_screen_pos(b, cp, false, true);
+    PixelCoordinate sun = get_screen_pos(b->sun, cp, false, true);
     double sunX = sun.x;
     double sunY = sun.y;
     double dx = body.x - sunX;
@@ -525,8 +565,8 @@ void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
 }
 
 void draw_orbit_overlay(SDL_Renderer* r, Body* b, ControlPanel* cp) {
-    PixelCoordinate body = get_screen_pos(b, cp, false);
-    PixelCoordinate sun = get_screen_pos(b->sun, cp, false);
+    PixelCoordinate body = get_screen_pos(b, cp, false, true);
+    PixelCoordinate sun = get_screen_pos(b->sun, cp, false, true);
     double sunX = sun.x;
     double sunY = sun.y;
     double dx = body.x - sunX;
@@ -578,17 +618,25 @@ int get_render_size(Body* b, ControlPanel* cp) {
     }
 }
 
-PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash) {
+PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash, bool offset) {
     PixelCoordinate pixel;
     double scale = get_pos_scale(b, cp);
     pixel.x = b->pos.x * cp->zoom / scale;
     pixel.y = b->pos.y * cp->zoom / scale;
-    pixel.x += SCREEN_WIDTH/2 + cp->offsetX*cp->zoom;
+    pixel.x += SCREEN_WIDTH/2;
+
+    if (offset) {
+        pixel.x += cp->offsetX*cp->zoom;
+    }
 
     if (squash) {
         pixel.y *= get_squash_factor(cp->angle);
     }
-    pixel.y += SCREEN_HEIGHT/2 + cp->offsetY*cp->zoom;
+    pixel.y += SCREEN_HEIGHT/2;
+
+    if (offset) {
+        pixel.y += cp->offsetY*cp->zoom;
+    }
     return pixel;
 }
 
@@ -699,7 +747,7 @@ SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
 }
 
 void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn) {
-    PixelCoordinate pos = get_screen_pos(b, cp, true);
+    PixelCoordinate pos = get_screen_pos(b, cp, true, true);
     int base_radius = get_render_size(b, cp);
     int radius = isSaturn ? base_radius * RING_FACTOR : base_radius;
     pos.x -= radius;

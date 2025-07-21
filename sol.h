@@ -54,6 +54,8 @@ typedef struct control_panel {
     bool show_cursor;
     bool quit;
     Body* hover_body;
+    Body* tracked_body;
+    bool gravity_changed;
 } ControlPanel;
 
 typedef enum speed {slow = 1, fast = 100} speed;
@@ -65,7 +67,7 @@ enum {left = -1, up = -1, right = 1, down = 1};
 
 SolarSystem* init_solar_system(void);
 void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp);
-PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash);
+PixelCoordinate get_screen_pos(Body* b, ControlPanel* cp, bool squash, bool offset);
 void draw_body(SDL_Renderer* r, Body* b, ControlPanel* cp);
 void update_orbit(Body* b, SolarSystem* sol, double rt, double g);
 void update_orbits(SolarSystem* sol, ControlPanel* cp);
@@ -93,4 +95,4 @@ void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay);
 bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp);
 Body* get_body_from_mouse_pos(SolarSystem* sol, SDL_MouseMotionEvent mouse, ControlPanel* cp);
 double get_offset_correction(Body* b, PixelCoordinate oldPos, ControlPanel* cp);
-
+void track_body(ControlPanel* cp);

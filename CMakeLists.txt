@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 99)
 include_directories(/usr/local/include/SDL2)
 link_directories(/usr/local/lib)
 
-add_executable(Orbit main.c
+add_executable(Orbit
         solar_system.c
         sol.h
         constants.h
