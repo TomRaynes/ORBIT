@@ -53,6 +53,7 @@ typedef struct control_panel {
     bool fullscreen;
     bool show_cursor;
     bool quit;
+    Body* hover_body;
 } ControlPanel;
 
 typedef enum speed {slow = 1, fast = 100} speed;
@@ -85,11 +86,11 @@ void draw_body_image(SDL_Renderer* r, Body* b, ControlPanel* cp, bool isSaturn);
 SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory);
 void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
 void translate_origin(const char* direction, ControlPanel* cp);
-void get_mouse_input(SDL_Event *event, ControlPanel* cp);
+void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol);
 void randomise_body_position(Body* b);
 void randomise_solar_system(SolarSystem* sol);
 void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay);
-
-
-
+bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp);
+Body* get_body_from_mouse_pos(SolarSystem* sol, SDL_MouseMotionEvent mouse, ControlPanel* cp);
+double get_offset_correction(Body* b, PixelCoordinate oldPos, ControlPanel* cp);
 

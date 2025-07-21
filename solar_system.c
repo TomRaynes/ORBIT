@@ -44,7 +44,7 @@ int main(void) {
             if (e.type == SDL_KEYDOWN) {
                 get_keyboard_input(window, panel, sol, e);
             }
-            get_mouse_input(&e, panel);
+            get_mouse_input(&e, panel, sol);
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
@@ -137,7 +137,7 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
     }
 }
 
-void get_mouse_input(SDL_Event *event, ControlPanel* cp) {
+void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol) {
     static bool left_pressed = false;
     static bool right_pressed = false;
     static int left_initial_x = 0, left_initial_y = 0;
@@ -161,6 +161,7 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp) {
             } else if (event->button.button == SDL_BUTTON_RIGHT) {
                 right_pressed = false;
             }
+            cp->hover_body = NULL;
         break;
 
         case SDL_MOUSEMOTION:
@@ -174,14 +175,28 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp) {
                 left_initial_y = event->motion.y;
             }
             if (right_pressed) {
+                if (cp->hover_body == NULL) {
+                    cp->hover_body = get_body_from_mouse_pos(sol, event->motion, cp);
+                }
                 int delta_y = event->motion.y - right_initial_y;
+                double oldOffset = cp->offsetY;
+                PixelCoordinate oldPos;
+
+                if (cp->hover_body != NULL) {
+                    oldPos = get_screen_pos(cp->hover_body, cp, true);
+                }
                 cp->angle += delta_y;
 
+                if (cp->hover_body != NULL) {
+                    cp->offsetY -= get_offset_correction(cp->hover_body, oldPos, cp);
+                }
                 if (cp->angle < 0 ) {
                     cp->angle = 0;
+                    cp->offsetY = oldOffset;
                 }
                 if (cp->angle > 45) {
                     cp->angle = 45;
+                    cp->offsetY = oldOffset;
                 }
                 right_initial_y = event->motion.y;
             }
@@ -201,6 +216,29 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp) {
 
         default: break;
     }
+}
+
+double get_offset_correction(Body* b, PixelCoordinate oldPos, ControlPanel* cp) {
+    PixelCoordinate pos = get_screen_pos(b, cp, true);
+    return (pos.y - oldPos.y) / cp->zoom;
+}
+
+Body* get_body_from_mouse_pos(SolarSystem* sol, SDL_MouseMotionEvent mouse, ControlPanel* cp) {
+    for (int body=sun; body<=neptune; body++) {
+        if (is_hovering_on_body(sol->bodies[body], mouse.x, mouse.y, cp)) {
+            printf("Hovering on body %i\n", body);
+            return sol->bodies[body];
+        }
+    }
+    return NULL;
+}
+
+bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp) {
+    PixelCoordinate pos = get_screen_pos(b, cp, true);
+    int radius = get_render_size(b, cp);
+    bool alignedX = mouseX > pos.x - radius && mouseX < pos.x + radius;
+    bool alignedY = mouseY > pos.y - radius && mouseY < pos.y + radius;
+    return alignedX && alignedY;
 }
 
 void randomise_solar_system(SolarSystem* sol) {
