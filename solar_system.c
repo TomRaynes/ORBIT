@@ -5,7 +5,7 @@ int main(void) {
 
     SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_Window *window = SDL_CreateWindow("Orbits",
+    SDL_Window *window = SDL_CreateWindow("ORBIT",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
                                           SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -124,8 +124,8 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
             break;
         case SDLK_v: // toggle view mode
             rotate_view_mode(cp);
-            reset_control_panel(cp);
-            reset_solar_system(sol);
+            // reset_control_panel(cp);
+            // reset_solar_system(sol);
             break;
         case SDLK_SPACE: // pause
             cp->pause = !cp->pause;
@@ -726,8 +726,8 @@ SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
     SDL_Texture** textures = malloc(PERSPECTIVES * sizeof(SDL_Texture*));
 
     if (textures == NULL) {
-        fprintf(stderr, "ERROR: Failed to create texture array.\n");
-        return NULL;
+        fprintf(stderr, "ERROR: Failed to create texture array\n");
+        exit(EXIT_FAILURE);
     }
     char path[500];
 
@@ -737,8 +737,7 @@ SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
 
         if (!surface) {
             fprintf(stderr, "ERROR: Failed to load image %s: %s\n", path, IMG_GetError());
-            textures[i] = NULL;
-            continue;
+            exit(EXIT_FAILURE);
         }
 
         textures[i] = SDL_CreateTextureFromSurface(renderer, surface);
@@ -746,6 +745,7 @@ SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
 
         if (!textures[i]) {
             fprintf(stderr, "ERROR: Failed to create texture from %s: %s\n", path, SDL_GetError());
+            exit(EXIT_FAILURE);
         }
     }
     return textures;
