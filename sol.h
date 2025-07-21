@@ -90,7 +90,7 @@ void load_all_textures(SDL_Renderer* r, SolarSystem* sol);
 void translate_origin(const char* direction, ControlPanel* cp);
 void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol);
 void randomise_body_position(Body* b);
-void randomise_solar_system(SolarSystem* sol);
+void randomise_solar_system(SolarSystem* sol, ControlPanel* cp);
 void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay);
 bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp);
 Body* get_body_from_mouse_pos(SolarSystem* sol, SDL_MouseMotionEvent mouse, ControlPanel* cp);

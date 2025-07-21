@@ -134,7 +134,7 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
             cp->show_orbit = !cp->show_orbit;
             break;
         case SDLK_q:
-            randomise_solar_system(sol);
+            randomise_solar_system(sol, cp);
             break;
         case SDLK_c:
             cp->show_cursor = !cp->show_cursor;
@@ -278,7 +278,9 @@ bool is_hovering_on_body(Body* b, int mouseX, int mouseY, ControlPanel* cp) {
     return alignedX && alignedY;
 }
 
-void randomise_solar_system(SolarSystem* sol) {
+void randomise_solar_system(SolarSystem* sol, ControlPanel* cp) {
+    reset_solar_system(sol);
+    reset_control_panel(cp);
     srand(time(NULL));
 
     for (int body=mercury; body<=neptune; body++) {
@@ -302,6 +304,9 @@ void randomise_body_position(Body* b) {
 
     b->vel.x = velocity * baseX / magnitude;
     b->vel.y = velocity * baseY / magnitude;
+
+    // update rendering group
+    b->in_front = is_in_front(b);
 
 }
 
