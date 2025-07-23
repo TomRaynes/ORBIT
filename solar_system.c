@@ -38,6 +38,7 @@ int main(void) {
     ControlPanel* panel = init_control_panel();
 
     while (!panel->quit) {
+        // get user input
         while (SDL_PollEvent(&e) != 0) {
             if (e.type == SDL_QUIT) {
                 panel->quit = true;
@@ -47,7 +48,7 @@ int main(void) {
             }
             get_mouse_input(&e, panel, sol);
         }
-
+        // draw background
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
@@ -124,8 +125,6 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
             break;
         case SDLK_v: // toggle view mode
             rotate_view_mode(cp);
-            // reset_control_panel(cp);
-            // reset_solar_system(sol);
             break;
         case SDLK_SPACE: // pause
             cp->pause = !cp->pause;
@@ -224,7 +223,6 @@ void get_mouse_input(SDL_Event *event, ControlPanel* cp, SolarSystem* sol) {
             }
             break;
         case SDL_MOUSEWHEEL:
-            // Positive y is scroll up, negative is scroll down
             cp->zoom_level -= event->wheel.y;
 
             if (cp->zoom_level > 40) {
@@ -548,6 +546,7 @@ void draw_solar_system(SDL_Renderer* r, SolarSystem* sol, ControlPanel* cp) {
 void draw_orbit(SDL_Renderer* r, Body* b, ControlPanel* cp, bool front) {
     PixelCoordinate body = get_screen_pos(b, cp, false, true);
     PixelCoordinate sun = get_screen_pos(b->sun, cp, false, true);
+    // TODO: clean up draw orbit functions
     double sunX = sun.x;
     double sunY = sun.y;
     double dx = body.x - sunX;
