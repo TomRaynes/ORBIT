@@ -17,22 +17,14 @@ and distances between the planets and sun.
 ### Cursor Controls
 - `Left click and drag` to move horizontal and vertical camera position  
 
----
-
 - `Right click and drag` to change vertical camera perspective
 
   - By default, perspective is shifted relative to the sun  
   - If hovering over or tracking a planet, perspective shifts relative to that planet
 
----
-
 - `Scroll` to adjust zoom
-  
----
 
 - `SHIFT` + `Left Click` on a planet to track its orbit
-
----
 
 ### Keyboard Controls
 - `Up Arrow` and `Down Arrow` to increment and decrement gravity
