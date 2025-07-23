@@ -7,7 +7,7 @@ include_directories(/usr/local/include/SDL2)
 link_directories(/usr/local/lib)
 
 add_executable(Orbit
-        solar_system.c
+        orbit.c
         sol.h
         constants.h
 )
