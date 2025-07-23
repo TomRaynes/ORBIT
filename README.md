@@ -50,9 +50,9 @@ and distances between the planets and sun.
 ## Visualisation Modes
 <div align="center">
     <p>
-        <img src="Assets/default_view.png" width="300">
-        <img src="Assets/true_distance.png" width="300">
-        <img src="Assets/true_size.png" width="300">
+        <img src="Assets/default_view.png" width="280">
+        <img src="Assets/true_distance.png" width="280">
+        <img src="Assets/true_size.png" width="280">
     </p>
 Default View (left), True Distance (middle), True Size (right)
 <br><br>
