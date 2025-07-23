@@ -14,15 +14,10 @@ typedef struct pixel_coordinate {
     double x, y;
 } PixelCoordinate;
 
-typedef struct colour {
-    int r, g, b, a;
-} Colour;
-
 typedef struct body {
     Vector vel;
     Vector pos;
     double mass;
-    Colour col;
     double radius; // for true distance
     double true_radius; // for true size
     double pv_radius; // for planet view
@@ -75,7 +70,6 @@ void get_keyboard_input(SDL_Window* w, ControlPanel* cp, SolarSystem* sol, SDL_E
 ControlPanel* init_control_panel(void);
 void reset_solar_system(SolarSystem* sol);
 void reset_control_panel(ControlPanel* panel);
-void set_colour(SDL_Renderer* r, Body* b);
 int get_render_size(Body* b, ControlPanel* cp);
 void adjust_zoom(ControlPanel* cp, const char* operation);
 void rotate_view_mode(ControlPanel* cp);

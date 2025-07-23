@@ -469,35 +469,6 @@ void reset_solar_system(SolarSystem* sol) {
     sol->neptune.pos.y = sol->neptune.vel.x = 0;
     sol->neptune.in_front = true;
 
-    // set colours
-    sol->sun.col.r = SUN_COLOUR_R;
-    sol->sun.col.g = SUN_COLOUR_G;
-    sol->sun.col.b = SUN_COLOUR_B;
-    sol->mercury.col.r = MERCURY_COLOUR_R;
-    sol->mercury.col.g = MERCURY_COLOUR_G;
-    sol->mercury.col.b = MERCURY_COLOUR_B;
-    sol->venus.col.r = VENUS_COLOUR_R;
-    sol->venus.col.g = VENUS_COLOUR_G;
-    sol->venus.col.b = VENUS_COLOUR_B;
-    sol->earth.col.r = EARTH_COLOUR_R;
-    sol->earth.col.g = EARTH_COLOUR_G;
-    sol->earth.col.b = EARTH_COLOUR_B;
-    sol->mars.col.r = MARS_COLOUR_R;
-    sol->mars.col.g = MARS_COLOUR_G;
-    sol->mars.col.b = MARS_COLOUR_B;
-    sol->jupiter.col.r = JUPITER_COLOUR_R;
-    sol->jupiter.col.g = JUPITER_COLOUR_G;
-    sol->jupiter.col.b = JUPITER_COLOUR_B;
-    sol->saturn.col.r = SATURN_COLOUR_R;
-    sol->saturn.col.g = SATURN_COLOUR_G;
-    sol->saturn.col.b = SATURN_COLOUR_B;
-    sol->uranus.col.r = URANUS_COLOUR_R;
-    sol->uranus.col.g = URANUS_COLOUR_G;
-    sol->uranus.col.b = URANUS_COLOUR_B;
-    sol->neptune.col.r = NEPTUNE_COLOUR_R;
-    sol->neptune.col.g = NEPTUNE_COLOUR_G;
-    sol->neptune.col.b = NEPTUNE_COLOUR_B;
-
     sol->bodies[0] = &sol->sun;
     sol->bodies[1] = &sol->mercury;
     sol->bodies[2] = &sol->venus;
@@ -711,14 +682,9 @@ void calculate_acceleration(Body* b, SolarSystem* sol, double* ax, double* ay) {
     }
 }
 
-
 bool is_in_front(Body* b) {
     double current_radius = sqrt(b->pos.x*b->pos.x + b->pos.y*b->pos.y);
     return -b->pos.y/current_radius < 0.6 || b->pos.y > 0;
-}
-
-void set_colour(SDL_Renderer* r, Body* b) {
-    SDL_SetRenderDrawColor(r, b->col.r, b->col.g, b->col.b, PLANET_COLOUR_OPACITY);
 }
 
 SDL_Texture** load_textures(SDL_Renderer* renderer, const char* directory) {
