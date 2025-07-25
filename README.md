@@ -1,14 +1,14 @@
 <div align="center">
     <img src="Assets/banner.png" width="1309">
 
-Orbit is an interactive solar system simulator that models all eight planets and the sun. Explore a vast cosmos of 
-celestial bodies in three dimensions and control gravity to witness the chaotic effects of the resultant 
+Orbit is an interactive solar system simulator that models all eight planets and the sun.<br>Explore a vast cosmos of 
+celestial bodies in three dimensions and control gravity to witness the<br>chaotic effects of the resultant 
 gravitational interactions.
     <p>
         <img src="Assets/main.gif" width="400">
         <img src="Assets/gravity.gif" width="400">
     </p>
-Visualise our solar system at different scales, observing both the relative sizes of
+Visualise our solar system at different scales,<br>observing both the relative sizes of
 and distances between the planets and sun.
     <p>
         <br>
