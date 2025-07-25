@@ -3,11 +3,18 @@
 
 Orbit is an interactive solar system simulator that models all eight planets and the sun. Explore a vast cosmos of 
 celestial bodies in three dimensions and control gravity to witness the chaotic effects of the resultant 
-gravitational interactions. Visualise our solar system at different scales, observing both the relative sizes of
-and distances between the planets and sun.
+gravitational interactions.
     <p>
         <img src="Assets/main.gif" width="400">
         <img src="Assets/gravity.gif" width="400">
+    </p>
+Visualise our solar system at different scales, observing both the relative sizes of
+and distances between the planets and sun.
+    <p>
+        <img src="Assets/default_view.gif" width="260">
+        <img src="Assets/true_distance.gif" width="260">
+        <img src="Assets/true_size.gif" width="260">
+<br>Default View&nbsp;&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;True Distance&nbsp;&nbsp;&nbsp;&nbsp;—&nbsp;&nbsp;&nbsp;&nbsp;True Size
     </p>
 </div>
 
@@ -47,13 +54,22 @@ and distances between the planets and sun.
 
 - `ESC` to exit program
 
-## Visualisation Modes
-<div align="center">
-    <p>
-        <img src="Assets/default_view.png" width="260">
-        <img src="Assets/true_distance.png" width="260">
-        <img src="Assets/true_size.png" width="260">
-    </p>
-Default View (left), True Distance (middle), True Size (right)
-<br><br>
-</div>
+[//]: # (## Visualisation Modes)
+
+[//]: # (<div align="center">)
+
+[//]: # (    <p>)
+
+[//]: # (        <img src="Assets/default_view.gif" width="260">)
+
+[//]: # (        <img src="Assets/true_distance.gif" width="260">)
+
+[//]: # (        <img src="Assets/true_size.gif" width="260">)
+
+[//]: # (    </p>)
+
+[//]: # (Default View &#40;left&#41;, True Distance &#40;middle&#41;, True Size &#40;right&#41;)
+
+[//]: # (<br><br>)
+
+[//]: # (</div>)
