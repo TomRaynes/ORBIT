@@ -11,6 +11,7 @@ gravitational interactions.
 Visualise our solar system at different scales, observing both the relative sizes of
 and distances between the planets and sun.
     <p>
+        <br>
         <img src="Assets/default_view.gif" width="260">
         <img src="Assets/true_distance.gif" width="260">
         <img src="Assets/true_size.gif" width="260">
